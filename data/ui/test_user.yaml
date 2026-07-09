@@ -1,0 +1,7 @@
+# 用户列表测试数据 (对应 test_user.py)
+
+test_search_by_username:
+  username: "testui"
+
+test_disable_user:
+  username: "testui"
