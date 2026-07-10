@@ -117,16 +117,15 @@ class AdminUserPage:
         # 过滤掉没有 td 的行（可能是空占位行）
         return [row for row in all_rows if row.locator("td").count() > 0]
 
-    def get_row_data(self, row_index: int = 0) -> dict:
+    def get_row_data(self, row) -> dict:
         """获取指定行的数据
 
         Args:
-            row_index: 行索引，从0开始
+            row: Playwright Locator 行元素
 
         Returns:
             dict: 包含 id, username, nickname, email, create_time, login_time 的字典
         """
-        row = self.user_table.locator("tbody tr").nth(row_index)
         cells = row.locator("td").all()
 
         return {
@@ -142,8 +141,8 @@ class AdminUserPage:
         """获取所有行的数据"""
         rows = self.get_all_rows()
         result = []
-        for i in range(len(rows)):
-            result.append(self.get_row_data(i))
+        for row in rows:
+            result.append(self.get_row_data(row))
         return result
 
 

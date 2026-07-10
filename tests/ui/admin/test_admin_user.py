@@ -4,7 +4,7 @@
 """
 
 from playwright.sync_api import Page, expect
-from ui.flows.admin_user_flow import AdminUserFlow
+from ui.flows.admin.admin_user_flow import AdminUserFlow
 from utils.data_loader import load_yaml
 
 # 加载测试数据（文件名与测试文件对应）

@@ -5,7 +5,7 @@
 
 import pytest
 from playwright.sync_api import Page, expect
-from ui.pages.login_page import LoginPage
+from ui.pages.admin.admin_login_page import LoginPage
 
 
 @pytest.fixture

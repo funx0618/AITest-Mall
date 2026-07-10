@@ -4,7 +4,7 @@ Admin User Flow - 用户列表业务流程
 """
 
 from playwright.sync_api import Page
-from ui.pages.admin_user_page import AdminUserPage
+from ui.pages.admin.admin_user_page import AdminUserPage
 
 
 class AdminUserFlow:

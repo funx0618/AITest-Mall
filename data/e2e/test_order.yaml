@@ -1,0 +1,9 @@
+# 端到端下单测试数据 (对应 test_order.py)
+
+# 普通下单流程
+test_normal_order:
+  keyword: "小米电视"
+  product_name: "小米电视4A"
+  product_id: "33"
+  sku_size: "50英寸"
+  sku_spec: "8G"
