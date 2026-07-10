@@ -20,7 +20,7 @@ class LoginPage:
         self.username_input = page.get_by_placeholder("请输入用户名")
         self.password_input = page.get_by_placeholder("请输入密码")
         self.login_btn = page.get_by_role("button", name="登录")
-        self.eye_icon = page.locator('[placeholder="请输入密码"] ~ .el-input__suffix .el-input__password')
+        self.eye_icon = page.locator(".el-input:has(input[name='password']) .el-input__password")
 
         # ========== 提示信息 ==========
         self.error_message = page.locator(".el-message--error")

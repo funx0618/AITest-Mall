@@ -6,16 +6,19 @@ App Home / Search Page Object
 
 from playwright.sync_api import Page, expect
 from config.settings import WEB_BASE_URL
+import re
 
 
 class AppHomePage:
     """App 首页 / 搜索页对象"""
 
     URL = WEB_BASE_URL + "/#"
-    SEARCH_URL = WEB_BASE_URL + "/#/pages/product/search"
 
     def __init__(self, page: Page):
         self.page = page
+
+        # ========== 首页搜索框（点击进入搜索页） ==========
+        self.search_entry = page.locator(".uni-page-head-search")
 
         # ========== 搜索页元素（搜索页才有可用的 input） ==========
         self.search_input = page.get_by_role("searchbox")
@@ -35,8 +38,10 @@ class AppHomePage:
 
     # ========== 搜索操作 ==========
     def search(self, keyword: str):
-        """导航到搜索页，输入关键词并搜索"""
-        self.page.goto(self.SEARCH_URL)
+        """点击首页搜索框进入搜索页，输入关键词并搜索"""
+        self.goto()
+        self.search_entry.click()
+        expect(self.page).to_have_url(re.compile("search"), timeout=10000)
         expect(self.search_input).to_be_visible(timeout=10000)
         self.search_input.fill(keyword)
         # 使用回车键触发搜索，避免点击到错误的"搜索"文本

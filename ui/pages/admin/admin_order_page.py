@@ -57,12 +57,18 @@ class AdminOrderPage:
         expect(self.page.get_by_text("发货列表")).to_be_visible(timeout=10000)
         return self
 
-    def select_delivery_sf(self):
-        """选择顺丰快递"""
+    def select_delivery(self, company: str = "顺丰"):
+        """选择快递公司
+
+        Args:
+            company: 快递公司名称，如 "顺丰快递"、"圆通快递"、"中通快递" 等
+        """
         # 点击表格中的下拉选择框
         self.page.locator('table .el-select').first.click()
-        # 等待下拉面板出现，点击顺丰选项
-        self.page.locator('.el-select-dropdown__item:has-text("顺丰")').click(timeout=10000)
+        # 等待下拉面板出现，点击对应快递公司选项
+        dropdown_panel = self.page.locator('.el-select-dropdown')
+        expect(dropdown_panel).to_be_visible(timeout=5000)
+        self.page.locator(f'.el-select-dropdown__item:has-text("{company}")').click(timeout=10000)
         return self
 
     def fill_tracking_no(self, tracking_no: str):

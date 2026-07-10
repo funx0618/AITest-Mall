@@ -7,3 +7,5 @@ test_normal_order:
   product_id: "33"
   sku_size: "50英寸"
   sku_spec: "8G"
+  delivery_company: "圆通快递"
+  delivery_prefix: "YT"

@@ -16,12 +16,18 @@ class AdminOrderFlow:
         self.admin_page = admin_page
         self.admin_order = AdminOrderPage(admin_page)
 
-    def admin_ship_order(self, order_no: str):
-        """后台按订单编号搜索并发货"""
+    def admin_ship_order(self, order_no: str, delivery_company: str = "顺丰", delivery_prefix: str = "SF"):
+        """后台按订单编号搜索并发货
+
+        Args:
+            order_no: 订单编号
+            delivery_company: 快递公司名称
+            delivery_prefix: 物流单号前缀（2位拼音缩写）
+        """
         self.admin_order.goto()
         self.admin_order.search_by_order_no(order_no)
         self.admin_order.click_ship()
-        self.admin_order.select_delivery_sf()
-        tracking_no = f"SF{random.randint(1000000000, 9999999999)}"
+        self.admin_order.select_delivery(delivery_company)
+        tracking_no = f"{delivery_prefix}{random.randint(1000000000, 9999999999)}"
         self.admin_order.fill_tracking_no(tracking_no)
         self.admin_order.confirm_ship()

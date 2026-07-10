@@ -36,5 +36,12 @@
 - Element UI 成功提示：`.el-message--success`
 - Element UI 表格数据行：`table` → 过滤含 `td` 的行
 
+## 元素定位优先级（强制）
+按以下顺序选择定位器，优先使用靠前的方式：
+1. `get_by_role` / `get_by_label`
+2. `:has()` 伪选择器
+3. `name` / `placeholder`
+4. `class`
+
 ## 登录凭据
 - 用户名：`funx`，密码：`123456`
