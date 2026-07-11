@@ -5,7 +5,7 @@ App API Client - 前台商城 HTTP 客户端基类
 """
 
 from playwright.sync_api import APIRequestContext
-from api.api_response import ApiResponse
+from api.admin.clients.api_response import ApiResponse
 from utils.logger import logger
 from config.settings import APP_API_BASE_URL
 

@@ -4,8 +4,9 @@ Admin API Client - 后台管理 HTTP 客户端基类
 使用 Playwright APIRequestContext 实现
 """
 
+import json
 from playwright.sync_api import APIRequestContext
-from api.api_response import ApiResponse
+from api.admin.clients.api_response import ApiResponse
 from utils.logger import logger
 from config.settings import ADMIN_API_BASE_URL
 
@@ -48,25 +49,26 @@ class AdminApiClient:
     def post(self, path: str, data: dict | None = None, json_data: dict | None = None) -> ApiResponse:
         """发送 POST 请求"""
         url = f"{self.BASE_URL}{path}"
-        logger.info(f"POST {url} data={data}, json={json_data}")
-        kwargs: dict = {"headers": self._get_auth_header()}
-        if data:
+        logger.info(f"POST {url}")
+        kwargs = {"headers": self._get_auth_header()}
+        if json_data is not None:
+            kwargs["data"] = json.dumps(json_data)
+            kwargs["headers"]["Content-Type"] = "application/json"
+        elif data is not None:
             kwargs["form"] = data
-        if json_data:
-            kwargs["data"] = json_data
         resp = self._api_context.post(url, **kwargs)
         return self._build_response(resp, f"POST {path}")
 
     def put(self, path: str, json_data: dict | None = None) -> ApiResponse:
         """发送 PUT 请求"""
         url = f"{self.BASE_URL}{path}"
-        logger.info(f"PUT {url} json={json_data}")
-        resp = self._api_context.put(url, data=json_data, headers=self._get_auth_header())
+        logger.info(f"PUT {url}")
+        resp = self._api_context.put(url, json_data=json_data, headers=self._get_auth_header())
         return self._build_response(resp, f"PUT {path}")
 
-    def delete(self, path: str, params: dict | None = None) -> ApiResponse:
+    def delete(self, path: str) -> ApiResponse:
         """发送 DELETE 请求"""
         url = f"{self.BASE_URL}{path}"
-        logger.info(f"DELETE {url} params={params}")
-        resp = self._api_context.delete(url, params=params, headers=self._get_auth_header())
+        logger.info(f"DELETE {url}")
+        resp = self._api_context.delete(url, headers=self._get_auth_header())
         return self._build_response(resp, f"DELETE {path}")

@@ -4,10 +4,11 @@ Pytest 全局 conftest
 
 import re
 import pytest
-from playwright.sync_api import Page, Browser, BrowserContext, Playwright, APIRequestContext, expect
-from config.settings import LOGIN_URL, DEFAULT_USERNAME, DEFAULT_PASSWORD, WEB_USERNAME, WEB_PASSWORD, ADMIN_API_BASE_URL, APP_API_BASE_URL
+from playwright.sync_api import Page, Browser, Playwright, APIRequestContext, expect
+from config.settings import DEFAULT_USERNAME, DEFAULT_PASSWORD, WEB_USERNAME, WEB_PASSWORD, ADMIN_API_BASE_URL, APP_API_BASE_URL
 from ui.pages.admin.admin_login_page import LoginPage
 from ui.pages.app.app_login_page import AppLoginPage
+from api.admin.services.login_service import LoginService
 
 # Web App 手机端视窗配置 (iPhone 12)
 MOBILE_VIEWPORT = {"width": 375, "height": 812}
@@ -64,19 +65,18 @@ def app_logged_in(app_page: Page) -> Page:
 def admin_token(playwright: Playwright) -> str:
     """通过 SSO 登录获取后台管理 token"""
     api_context = playwright.request.new_context(base_url=ADMIN_API_BASE_URL)
-    resp = api_context.post(
-        "/admin/login",
-        form={"username": DEFAULT_USERNAME, "password": DEFAULT_PASSWORD},
-    )
-    assert resp.ok, f"登录请求失败: {resp.status} {resp.status_text}"
-    body = resp.json()
-    assert body.get("code") == 200, f"登录失败: {body}"
-    data = body.get("data", {})
-    token_head = data.get("tokenHead", "")
-    token = data.get("token", "")
-    assert token, f"登录未返回token: {body}"
-    api_context.dispose()
-    return f"{token_head}{token}"
+    try:
+        service = LoginService(api_context)
+        resp = service.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        assert resp.ok, f"登录请求失败: HTTP {resp.status_code}"
+        assert resp.code == 200, f"登录失败: {resp.json}"
+        data = resp.data
+        token_head = data.get("tokenHead", "")
+        token = data.get("token", "")
+        assert token, f"登录未返回token: {resp.json}"
+        return f"{token_head}{token}"
+    finally:
+        api_context.dispose()
 
 
 @pytest.fixture

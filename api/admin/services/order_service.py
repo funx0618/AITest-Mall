@@ -4,8 +4,8 @@ Admin Order Service - 后台管理订单相关接口封装
 """
 
 from playwright.sync_api import APIRequestContext
-from api.admin.clients.admin_api_client import AdminApiClient
-from api.api_response import ApiResponse
+from api.admin.clients.api_client import AdminApiClient
+from api.admin.clients.api_response import ApiResponse
 
 
 class AdminOrderService(AdminApiClient):
