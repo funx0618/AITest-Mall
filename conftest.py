@@ -19,7 +19,7 @@ MOBILE_USER_AGENT = (
 
 
 @pytest.fixture
-def logged_in_page(page: Page) -> Page:
+def admin_logged_in_page(page: Page) -> Page:
     """后台管理登录后的 page fixture"""
     login_page = LoginPage(page)
     login_page.goto()
@@ -30,7 +30,7 @@ def logged_in_page(page: Page) -> Page:
 
 
 @pytest.fixture
-def web_context(browser: Browser):
+def app_context(browser: Browser):
     """为 Web App 创建独立的手机端浏览器上下文"""
     context = browser.new_context(
         viewport=MOBILE_VIEWPORT,
@@ -43,18 +43,18 @@ def web_context(browser: Browser):
 
 
 @pytest.fixture
-def web_page(web_context):
+def app_page(app_context):
     """为 Web App 创建独立的手机端页面"""
-    page = web_context.new_page()
+    page = app_context.new_page()
     yield page
     page.close()
 
 
 @pytest.fixture
-def web_logged_in(web_page: Page) -> Page:
+def app_logged_in(app_page: Page) -> Page:
     """Web App 登录后的 page fixture"""
-    login_page = AppLoginPage(web_page)
+    login_page = AppLoginPage(app_page)
     login_page.goto()
     login_page.login(WEB_USERNAME, WEB_PASSWORD)
-    expect(web_page).to_have_url(re.compile(r".*#/$"), timeout=15000)
-    return web_page
+    expect(app_page).to_have_url(re.compile(r".*#/$"), timeout=15000)
+    return app_page

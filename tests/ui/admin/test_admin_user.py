@@ -14,12 +14,12 @@ test_data = load_yaml("ui/test_user.yaml")
 class TestUserSearch:
     """用户查询功能测试"""
 
-    def test_search_by_username(self, logged_in_page: Page):
+    def test_search_by_username(self, admin_logged_in_page: Page):
         """按帐号搜索用户"""
         data = test_data["test_search_by_username"]
         username = data["username"]
 
-        flow = AdminUserFlow(logged_in_page)
+        flow = AdminUserFlow(admin_logged_in_page)
         flow.search_user(username)
 
         # 验证搜索结果不为空
@@ -27,12 +27,12 @@ class TestUserSearch:
         # 验证结果中包含搜索关键词
         expect(flow.admin_page.cell_contain_text(username)).to_be_visible()
 
-    def test_disable_user(self, logged_in_page: Page):
+    def test_disable_user(self, admin_logged_in_page):
         """编辑用户 - 将是否启用改为否，验证开关变灰色"""
         data = test_data["test_disable_user"]
         username = data["username"]
 
-        flow = AdminUserFlow(logged_in_page)
+        flow = AdminUserFlow(admin_logged_in_page)
         flow.search_user(username)
 
         # 点击编辑，将是否启用改为否

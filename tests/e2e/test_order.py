@@ -26,14 +26,14 @@ test_data = load_yaml("e2e/test_order.yaml")
 class TestNormalOrder:
     """普通下单流程测试（无优惠券、无积分抵扣）"""
 
-    def test_normal_order_flow(self, web_logged_in: Page, logged_in_page: Page):
+    def test_normal_order_flow(self, app_logged_in: Page, admin_logged_in_page: Page):
         """完整下单流程：搜索商品 → 加入购物车 → 结算 → 支付 → 后台发货 → 确认收货"""
         data = test_data["test_normal_order"]
         keyword = data["keyword"]
         product_name = data["product_name"]
 
-        web_page = web_logged_in
-        admin_page = logged_in_page
+        web_page = app_logged_in
+        admin_page = admin_logged_in_page
 
         # ===== Step 1-2: 搜索商品并加入购物车 =====
         home = AppHomePage(web_page)
