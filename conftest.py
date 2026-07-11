@@ -4,7 +4,7 @@ Pytest 全局 conftest
 
 import re
 import pytest
-from playwright.sync_api import Page, Browser, Playwright, APIRequestContext, expect
+from playwright.sync_api import Page, Browser, Playwright, expect
 from config.settings import DEFAULT_USERNAME, DEFAULT_PASSWORD, WEB_USERNAME, WEB_PASSWORD, ADMIN_API_BASE_URL, APP_API_BASE_URL
 from ui.pages.admin.admin_login_page import LoginPage
 from ui.pages.app.app_login_page import AppLoginPage
@@ -80,7 +80,7 @@ def admin_token(playwright: Playwright) -> str:
 
 
 @pytest.fixture
-def admin_api_context(playwright: Playwright, admin_token: str) -> APIRequestContext:
+def admin_api_context(playwright: Playwright, admin_token: str):
     """后台管理 API 请求上下文（已携带 token）"""
     api_context = playwright.request.new_context(
         base_url=ADMIN_API_BASE_URL,
@@ -110,7 +110,7 @@ def app_token(playwright: Playwright) -> str:
 
 
 @pytest.fixture
-def app_api_context(playwright: Playwright, app_token: str) -> APIRequestContext:
+def app_api_context(playwright: Playwright, app_token: str):
     """前台商城 API 请求上下文（已携带 token）"""
     api_context = playwright.request.new_context(
         base_url=APP_API_BASE_URL,
