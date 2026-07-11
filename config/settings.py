@@ -10,6 +10,10 @@ ADMIN_LOGIN_URL = f"{ADMIN_BASE_URL}/#/login"
 WEB_BASE_URL = "http://localhost:8060"
 WEB_LOGIN_URL = f"{WEB_BASE_URL}/#/pages/public/login"
 
+# ========== API 配置 ==========
+ADMIN_API_BASE_URL = "http://localhost:8080"
+APP_API_BASE_URL = "http://localhost:8050"
+
 # ========== 兼容旧配置 ==========
 BASE_URL = ADMIN_BASE_URL
 LOGIN_URL = ADMIN_LOGIN_URL

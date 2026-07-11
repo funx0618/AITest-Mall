@@ -4,8 +4,8 @@ Pytest 全局 conftest
 
 import re
 import pytest
-from playwright.sync_api import Page, Browser, BrowserContext, expect
-from config.settings import LOGIN_URL, DEFAULT_USERNAME, DEFAULT_PASSWORD, WEB_USERNAME, WEB_PASSWORD
+from playwright.sync_api import Page, Browser, BrowserContext, Playwright, APIRequestContext, expect
+from config.settings import LOGIN_URL, DEFAULT_USERNAME, DEFAULT_PASSWORD, WEB_USERNAME, WEB_PASSWORD, ADMIN_API_BASE_URL, APP_API_BASE_URL
 from ui.pages.admin.admin_login_page import LoginPage
 from ui.pages.app.app_login_page import AppLoginPage
 
@@ -58,3 +58,63 @@ def app_logged_in(app_page: Page) -> Page:
     login_page.login(WEB_USERNAME, WEB_PASSWORD)
     expect(app_page).to_have_url(re.compile(r".*#/$"), timeout=15000)
     return app_page
+
+
+@pytest.fixture
+def admin_token(playwright: Playwright) -> str:
+    """通过 SSO 登录获取后台管理 token"""
+    api_context = playwright.request.new_context(base_url=ADMIN_API_BASE_URL)
+    resp = api_context.post(
+        "/admin/login",
+        form={"username": DEFAULT_USERNAME, "password": DEFAULT_PASSWORD},
+    )
+    assert resp.ok, f"登录请求失败: {resp.status} {resp.status_text}"
+    body = resp.json()
+    assert body.get("code") == 200, f"登录失败: {body}"
+    data = body.get("data", {})
+    token_head = data.get("tokenHead", "")
+    token = data.get("token", "")
+    assert token, f"登录未返回token: {body}"
+    api_context.dispose()
+    return f"{token_head}{token}"
+
+
+@pytest.fixture
+def admin_api_context(playwright: Playwright, admin_token: str) -> APIRequestContext:
+    """后台管理 API 请求上下文（已携带 token）"""
+    api_context = playwright.request.new_context(
+        base_url=ADMIN_API_BASE_URL,
+        extra_http_headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    yield api_context
+    api_context.dispose()
+
+
+@pytest.fixture
+def app_token(playwright: Playwright) -> str:
+    """通过 SSO 登录获取前台商城 token"""
+    api_context = playwright.request.new_context(base_url=APP_API_BASE_URL)
+    resp = api_context.post(
+        "/sso/login",
+        form={"username": WEB_USERNAME, "password": WEB_PASSWORD},
+    )
+    assert resp.ok, f"登录请求失败: {resp.status} {resp.status_text}"
+    body = resp.json()
+    assert body.get("code") == 200, f"登录失败: {body}"
+    data = body.get("data", {})
+    token_head = data.get("tokenHead", "")
+    token = data.get("token", "")
+    assert token, f"登录未返回token: {body}"
+    api_context.dispose()
+    return f"{token_head}{token}"
+
+
+@pytest.fixture
+def app_api_context(playwright: Playwright, app_token: str) -> APIRequestContext:
+    """前台商城 API 请求上下文（已携带 token）"""
+    api_context = playwright.request.new_context(
+        base_url=APP_API_BASE_URL,
+        extra_http_headers={"Authorization": f"Bearer {app_token}"},
+    )
+    yield api_context
+    api_context.dispose()
