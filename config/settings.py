@@ -12,7 +12,7 @@ WEB_LOGIN_URL = f"{WEB_BASE_URL}/#/pages/public/login"
 
 # ========== API 配置 ==========
 ADMIN_API_BASE_URL = "http://localhost:8080"
-APP_API_BASE_URL = "http://localhost:8050"
+APP_API_BASE_URL = "http://localhost:8085"
 
 # ========== 兼容旧配置 ==========
 BASE_URL = ADMIN_BASE_URL

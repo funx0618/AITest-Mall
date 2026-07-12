@@ -3,6 +3,20 @@ ApiResponse - 统一响应对象
 职责：封装 API 响应，提供统一的数据访问接口
 """
 
+from utils.logger import logger
+
+
+def build_api_response(resp, action: str) -> "ApiResponse":
+    """将 Playwright Response 转换为 ApiResponse 并记录日志"""
+    body = resp.json()
+    api_resp = ApiResponse(
+        status_code=resp.status,
+        json_data=body,
+        text=resp.text(),
+    )
+    logger.info(f"{action} | status={resp.status}, code={api_resp.code}")
+    return api_resp
+
 
 class ApiResponse:
     """统一 API 响应封装，Client 层返回此对象，由上层进行业务断言"""

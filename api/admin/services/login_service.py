@@ -4,8 +4,9 @@ Admin Login Service - 后台管理登录接口封装
 """
 
 from playwright.sync_api import APIRequestContext
-from api.admin.clients.api_response import ApiResponse
-from api.admin.clients.api_client import AdminApiClient
+from api.clients.api_response import ApiResponse
+from api.clients.api_client import ApiClient
+from config.settings import ADMIN_API_BASE_URL
 
 
 class LoginService:
@@ -14,7 +15,7 @@ class LoginService:
     LOGIN_PATH = "/admin/login"
 
     def __init__(self, api_context: APIRequestContext):
-        self._client = AdminApiClient(api_context, token="")
+        self._client = ApiClient(api_context, token="", base_url=ADMIN_API_BASE_URL)
 
     def login(self, username: str, password: str) -> ApiResponse:
         """发送登录请求"""

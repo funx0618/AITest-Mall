@@ -4,15 +4,16 @@ Admin Order Service - 后台管理订单相关接口封装
 """
 
 from playwright.sync_api import APIRequestContext
-from api.admin.clients.api_client import AdminApiClient
-from api.admin.clients.api_response import ApiResponse
+from api.clients.api_client import ApiClient
+from api.clients.api_response import ApiResponse
+from config.settings import ADMIN_API_BASE_URL
 
 
-class AdminOrderService(AdminApiClient):
-    """后台管理订单 API 封装，继承 AdminApiClient 并添加业务断言"""
+class AdminOrderService(ApiClient):
+    """后台管理订单 API 封装，继承 ApiClient 并添加业务断言"""
 
     def __init__(self, api_context: APIRequestContext, token: str):
-        super().__init__(api_context, token)
+        super().__init__(api_context, token, base_url=ADMIN_API_BASE_URL)
 
     def get_latest_order(self, status: int = 1) -> dict:
         """获取最新订单（按createTime倒序取第一条）"""
