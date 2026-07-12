@@ -1,0 +1,8 @@
+# 订单 API 测试数据 (对应 tests/api/admin/service_tests/test_order_list.py)
+
+test_query_by_receiver_status:
+  receiver_keyword: "符宁香"
+  status: 2  # 已发货
+
+test_query_by_create_time:
+  create_time: "2026-07-10"

@@ -4,14 +4,14 @@ Admin Order Flow - 后台管理订单业务流程封装
 """
 
 from playwright.sync_api import APIRequestContext
-from api.admin.services.order_service import AdminOrderService
+from api.admin.services.order_0_service import AdminOrderLegacyService
 
 
 class AdminOrderFlow:
     """后台管理订单业务流程"""
 
     def __init__(self, api_context: APIRequestContext, token: str):
-        self.order_service = AdminOrderService(api_context, token)
+        self.order_service = AdminOrderLegacyService(api_context, token)
 
     def get_latest_order_info(self, status: int = 1) -> tuple[int, str]:
         """获取最新订单信息，返回 (order_id, order_sn)"""

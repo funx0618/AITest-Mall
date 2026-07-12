@@ -2,6 +2,15 @@
 项目配置文件
 """
 
+# ========== 数据库配置 ==========
+DB_CONFIG = {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "root",
+    "database": "mall",
+}
+
 # ========== 后台管理（Admin）环境配置 ==========
 ADMIN_BASE_URL = "http://localhost:8090"
 ADMIN_LOGIN_URL = f"{ADMIN_BASE_URL}/#/login"
