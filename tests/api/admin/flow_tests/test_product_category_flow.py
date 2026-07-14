@@ -86,31 +86,42 @@ class TestProductCategoryFlow:
         assert category["description"] == test_data["description"], \
             f"description 不匹配: 期望 {test_data['description']}, 实际 {category['description']}"
 
-        # 3. 调用 detail API 验证分类已创建
-        detail_resp = category_service.get_category_detail(category_id)
-        assert detail_resp.ok, f"获取分类详情API请求失败: HTTP {detail_resp.status_code}"
-        assert detail_resp.json["data"]["name"] == test_data["name"], \
-            f"分类名称不匹配: 期望 {test_data['name']}, 实际 {detail_resp.json['data']['name']}"
-
-        # 4. 调用 API 将显示状态改为隐藏（showStatus: 1 -> 0）
+        # 3. 调用 API 将显示状态改为隐藏（showStatus: 1 -> 0）
         resp = category_service.update_show_status([category_id], 0)
         assert resp.ok, f"修改显示状态API请求失败: HTTP {resp.status_code}"
         assert resp.code == 200, f"修改显示状态失败: {resp.json}"
 
-        # 5. 数据库验证 - show_status 已更新为 0
+        # 4. 数据库验证 - show_status 已更新为 0，navStatus 仍为 1
         sql_verify = """
-            SELECT show_status FROM pms_product_category WHERE id = %s
+            SELECT show_status, nav_status FROM pms_product_category WHERE id = %s
         """
         db_result = db.query(sql_verify, (category_id,))
         assert db_result[0]["show_status"] == 0, \
             f"show_status 更新失败: 期望 0, 实际 {db_result[0]['show_status']}"
+        assert db_result[0]["nav_status"] == 1, \
+            f"nav_status 被误改: 期望 1, 实际 {db_result[0]['nav_status']}"
 
-        # 6. 调用 API 删除分类
+        # 5. 通过 Detail API 验证 show_status 已更新为 0
+        detail_resp = category_service.get_category_detail(category_id)
+        assert detail_resp.ok, f"获取分类详情API请求失败: HTTP {detail_resp.status_code}"
+        assert detail_resp.json["data"]["showStatus"] == 0, \
+            f"showStatus 更新失败: 期望 0, 实际 {detail_resp.json['data']['showStatus']}"
+
+        # 6. 通过 List API 验证 show_status
+        list_resp = category_service.get_category_list(test_data["parent_id"])
+        assert list_resp.ok, f"获取分类列表API请求失败: HTTP {list_resp.status_code}"
+        assert list_resp.json["code"] == 200, f"获取分类列表失败: {list_resp.json}"
+        target = next((i for i in list_resp.json["data"]["list"] if i["id"] == category_id), None)
+        assert target is not None, f"分类 ID={category_id} 未在列表中找到"
+        assert target["showStatus"] == 0, \
+            f"列表中 showStatus 不匹配: 期望 0, 实际 {target['showStatus']}"
+
+        # 7. 调用 API 删除分类
         resp = category_service.delete_category(category_id)
         assert resp.ok, f"删除分类API请求失败: HTTP {resp.status_code}"
         assert resp.code == 200, f"删除分类失败: {resp.json}"
 
-        # 7. 数据库验证 - 分类已被删除
+        # 8. 数据库验证 - 分类已被删除
         sql_delete = """
             SELECT COUNT(*) AS cnt FROM pms_product_category WHERE id = %s
         """
@@ -161,31 +172,42 @@ class TestProductCategoryFlow:
         assert category["description"] == test_data["description"], \
             f"description 不匹配: 期望 {test_data['description']}, 实际 {category['description']}"
 
-        # 3. 调用 detail API 验证分类已创建
-        detail_resp = category_service.get_category_detail(category_id)
-        assert detail_resp.ok, f"获取分类详情API请求失败: HTTP {detail_resp.status_code}"
-        assert detail_resp.json["data"]["name"] == test_data["name"], \
-            f"分类名称不匹配: 期望 {test_data['name']}, 实际 {detail_resp.json['data']['name']}"
-
-        # 4. 调用 API 将导航栏状态改为显示（navStatus: 0 -> 1）
+        # 3. 调用 API 将导航栏状态改为显示（navStatus: 0 -> 1）
         resp = category_service.update_nav_status([category_id], 1)
         assert resp.ok, f"修改导航栏状态API请求失败: HTTP {resp.status_code}"
         assert resp.code == 200, f"修改导航栏状态失败: {resp.json}"
 
-        # 5. 数据库验证 - nav_status 已更新为 1
+        # 4. 数据库验证 - nav_status 已更新为 1，showStatus 仍为 0
         sql_verify = """
-            SELECT nav_status FROM pms_product_category WHERE id = %s
+            SELECT nav_status, show_status FROM pms_product_category WHERE id = %s
         """
         db_result = db.query(sql_verify, (category_id,))
         assert db_result[0]["nav_status"] == 1, \
             f"nav_status 更新失败: 期望 1, 实际 {db_result[0]['nav_status']}"
+        assert db_result[0]["show_status"] == 0, \
+            f"show_status 被误改: 期望 0, 实际 {db_result[0]['show_status']}"
 
-        # 6. 调用 API 删除分类
+        # 5. 通过 Detail API 验证 nav_status 已更新为 1
+        detail_resp = category_service.get_category_detail(category_id)
+        assert detail_resp.ok, f"获取分类详情API请求失败: HTTP {detail_resp.status_code}"
+        assert detail_resp.json["data"]["navStatus"] == 1, \
+            f"navStatus 更新失败: 期望 1, 实际 {detail_resp.json['data']['navStatus']}"
+
+        # 6. 通过 List API 验证 nav_status
+        list_resp = category_service.get_category_list(test_data["parent_id"])
+        assert list_resp.ok, f"获取分类列表API请求失败: HTTP {list_resp.status_code}"
+        assert list_resp.json["code"] == 200, f"获取分类列表失败: {list_resp.json}"
+        target = next((i for i in list_resp.json["data"]["list"] if i["id"] == category_id), None)
+        assert target is not None, f"分类 ID={category_id} 未在列表中找到"
+        assert target["navStatus"] == 1, \
+            f"列表中 navStatus 不匹配: 期望 1, 实际 {target['navStatus']}"
+
+        # 7. 调用 API 删除分类
         resp = category_service.delete_category(category_id)
         assert resp.ok, f"删除分类API请求失败: HTTP {resp.status_code}"
         assert resp.code == 200, f"删除分类失败: {resp.json}"
 
-        # 7. 数据库验证 - 分类已被删除
+        # 8. 数据库验证 - 分类已被删除
         sql_delete = """
             SELECT COUNT(*) AS cnt FROM pms_product_category WHERE id = %s
         """

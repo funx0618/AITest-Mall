@@ -16,6 +16,7 @@ class DBClient:
             **DB_CONFIG,
             cursorclass=DictCursor,
             charset="utf8mb4",
+            autocommit=True,
         )
 
     def query(self, sql: str, params: tuple | list | None = None) -> list[dict]:
