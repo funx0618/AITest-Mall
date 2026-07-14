@@ -1,0 +1,25 @@
+# 商品分类业务流程测试数据 (对应 tests/api/admin/flow_tests/test_product_category_flow.py)
+
+test_create_category_visible:
+  name: "测试分类_显示"
+  parent_id: 0
+  product_unit: "个"
+  nav_status: 1
+  show_status: 1
+  sort: 100
+  icon: "icon-test"
+  keywords: "测试关键字"
+  description: "测试分类描述-显示状态"
+  product_attribute_id_list: []
+
+test_create_category_hidden:
+  name: "测试分类_隐藏"
+  parent_id: 0
+  product_unit: "件"
+  nav_status: 0
+  show_status: 0
+  sort: 200
+  icon: "icon-hidden"
+  keywords: "隐藏关键字"
+  description: "测试分类描述-隐藏状态"
+  product_attribute_id_list: []

@@ -63,13 +63,13 @@ class AdminProductCategoryService(ApiClient):
         POST /productCategory/update/navStatus
         nav_status: 0=不显示, 1=显示
         """
-        params = {"ids": ids, "navStatus": nav_status}
-        return self.post("/productCategory/update/navStatus", data=params)
+        ids_str = ",".join(str(i) for i in ids)
+        return self.post(f"/productCategory/update/navStatus?ids={ids_str}&navStatus={nav_status}")
 
     def update_show_status(self, ids: list[int], show_status: int) -> ApiResponse:
         """修改显示状态
         POST /productCategory/update/showStatus
         show_status: 0=不显示, 1=显示
         """
-        params = {"ids": ids, "showStatus": show_status}
-        return self.post("/productCategory/update/showStatus", data=params)
+        ids_str = ",".join(str(i) for i in ids)
+        return self.post(f"/productCategory/update/showStatus?ids={ids_str}&showStatus={show_status}")
