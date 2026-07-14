@@ -45,3 +45,43 @@
 
 ## 登录凭据
 - 用户名：`funx`，密码：`123456`
+
+## API 自动化开发工作流（强制）
+
+开发 API 自动化测试时，**必须遵循以下流程**：
+
+### 1. 添加 API Service
+- **路径**：`api/admin/` 或 `api/app/`（根据目标端选择）
+- **格式**：参考 `api/admin/services/order_service.py`
+- **职责**：封装 API 文档中同个 Controller 下的 API 请求方法
+
+### 2. 生成测试数据
+- **路径**：`data/api/`
+- **命名规则**：测试数据文件名 **必须** 与对应测试用例文件名一致（如 `test_order_list.yaml`）
+- **Key 规则**：YAML 中的 key **必须** 与测试方法名一致，以便按方法名自动加载对应测试数据
+
+### 3. 编写测试用例
+- **路径**：`tests/api/admin/` 或 `tests/api/app/`
+  - `service_tests/` — 单个 API 接口用例
+  - `flow_tests/` — 业务流程用例（跨多个接口的完整业务场景）
+- **断言**：统一使用 `assert`（禁止 `expect`）
+
+### 3.1 单接口用例验证规则（强制）
+- **API 文档**：`docs/api docs/` 下有各模块的 API 说明文件（如 `order-api.md`、`admin-product-api.md`）
+- **编写单个 API 用例前**：必须先阅读对应的 API 文档，获取该接口的参数定义和**涉及表**
+- **验证范围**：`service_tests/` 中的用例必须按照 API 文档中列出的**涉及表**进行数据验证，确保接口操作的数据落库正确
+
+### 4. 工具类
+- **路径**：`utils/`（公共工具方法，如数据加载、请求封装等）
+
+### 文件对应关系示意
+```
+docs/api docs/order-api.md         # API 文档（接口定义 + 涉及表）
+api/admin/order_service.py         # Service 层（封装 API 请求，对应 api docs 中的 Controller）
+data/api/test_order_list.yaml      # 测试数据
+tests/api/admin/service_tests/
+    test_order_list.py             # 单接口用例（按涉及表验证）
+tests/api/admin/flow_tests/
+    test_order_flow.py             # 业务流程用例
+utils/data_loader.py               # 工具类
+```
