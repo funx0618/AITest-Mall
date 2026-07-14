@@ -25,9 +25,9 @@ def category_service(playwright: Playwright, admin_token: str):
     api_context.dispose()
 
 
-@pytest.fixture
+@pytest.fixture(scope="class")
 def db():
-    """数据库客户端实例"""
+    """数据库客户端实例（整个测试类共享一个连接）"""
     client = DBClient()
     yield client
     client.close()
