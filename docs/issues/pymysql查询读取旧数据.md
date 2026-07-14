@@ -9,10 +9,11 @@ API 自动化
 在 `tests/api/admin/flow_tests/test_product_category_flow.py` 的 `test_create_category_hidden` 用例中：
 通过/productCategory/update/navStatus api 将nav_status由0更新为1后，
 验证在表中是否将数nav_status更新成功，但sql查询到的还是为0，导致测试用例一直失败，
-但/productCategory/list/ 中返回的nav_status为1
-且这个2个api用的都是同一个表pms_product_category
+是api有bug？但在页面中看到的是商品分类中导航栏这个字段是显示的，说明是更新成功了的
+于是验证下/productCategory/list/ API返回的nav_status为1
+且update和list这2个api用的都是同一个表pms_product_category
 
-上面的问题出现后让AI去分析原因
+让AI去解决上面的问题：
 
 AI 排查过程：
 navStatus 这个api有bug？更新了缓存但未写入数据库
