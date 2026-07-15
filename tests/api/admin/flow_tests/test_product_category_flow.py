@@ -213,3 +213,113 @@ class TestProductCategoryFlow:
         """
         db_result = db.query(sql_delete, (category_id,))
         assert db_result[0]["cnt"] == 0, f"分类未被删除: ID={category_id}"
+
+    def test_create_subcategory_and_delete(self, category_service: AdminProductCategoryService, db: DBClient, test_data: dict):
+        """创建父分类 -> 在父分类下新增子分类 -> 删除子分类"""
+        parent_data = test_data["parent_category"]
+        sub_data = test_data["sub_category"]
+
+        # 1. 创建父分类
+        parent_param = {
+            "parentId": parent_data["parent_id"],
+            "name": parent_data["name"],
+            "productUnit": parent_data["product_unit"],
+            "navStatus": parent_data["nav_status"],
+            "showStatus": parent_data["show_status"],
+            "sort": parent_data["sort"],
+            "icon": parent_data["icon"],
+            "keywords": parent_data["keywords"],
+            "description": parent_data["description"],
+            "productAttributeIdList": parent_data["product_attribute_id_list"],
+        }
+        resp = category_service.create_category(parent_param)
+        assert resp.ok, f"创建父分类API请求失败: HTTP {resp.status_code}"
+        assert resp.code == 200, f"创建父分类失败: {resp.json}"
+
+        # 2. 数据库验证父分类已创建
+        sql_parent = """
+            SELECT * FROM pms_product_category
+            WHERE name = %s AND parent_id = %s
+            ORDER BY id DESC
+            LIMIT 1
+        """
+        db_result = db.query(sql_parent, (parent_data["name"], parent_data["parent_id"]))
+        assert len(db_result) > 0, f"数据库中未找到父分类: {parent_data['name']}"
+        parent_category = db_result[0]
+        parent_id = parent_category["id"]
+        assert parent_category["show_status"] == parent_data["show_status"], \
+            f"父分类 show_status 不匹配: 期望 {parent_data['show_status']}, 实际 {parent_category['show_status']}"
+        assert parent_category["nav_status"] == parent_data["nav_status"], \
+            f"父分类 nav_status 不匹配: 期望 {parent_data['nav_status']}, 实际 {parent_category['nav_status']}"
+
+        # 3. 在父分类下创建子分类
+        sub_param = {
+            "parentId": parent_id,
+            "name": sub_data["name"],
+            "productUnit": sub_data["product_unit"],
+            "navStatus": sub_data["nav_status"],
+            "showStatus": sub_data["show_status"],
+            "sort": sub_data["sort"],
+            "icon": sub_data["icon"],
+            "keywords": sub_data["keywords"],
+            "description": sub_data["description"],
+            "productAttributeIdList": sub_data["product_attribute_id_list"],
+        }
+        resp = category_service.create_category(sub_param)
+        assert resp.ok, f"创建子分类API请求失败: HTTP {resp.status_code}"
+        assert resp.code == 200, f"创建子分类失败: {resp.json}"
+
+        # 4. 数据库验证子分类已创建且 parent_id 指向父分类
+        sql_sub = """
+            SELECT * FROM pms_product_category
+            WHERE name = %s AND parent_id = %s
+            ORDER BY id DESC
+            LIMIT 1
+        """
+        db_result = db.query(sql_sub, (sub_data["name"], parent_id))
+        assert len(db_result) > 0, f"数据库中未找到子分类: {sub_data['name']}"
+        sub_category = db_result[0]
+        sub_category_id = sub_category["id"]
+        assert sub_category["parent_id"] == parent_id, \
+            f"子分类 parent_id 不匹配: 期望 {parent_id}, 实际 {sub_category['parent_id']}"
+        assert sub_category["show_status"] == sub_data["show_status"], \
+            f"子分类 show_status 不匹配: 期望 {sub_data['show_status']}, 实际 {sub_category['show_status']}"
+        assert sub_category["nav_status"] == sub_data["nav_status"], \
+            f"子分类 nav_status 不匹配: 期望 {sub_data['nav_status']}, 实际 {sub_category['nav_status']}"
+        assert sub_category["product_unit"] == sub_data["product_unit"], \
+            f"子分类 product_unit 不匹配: 期望 {sub_data['product_unit']}, 实际 {sub_category['product_unit']}"
+
+        # 5. 通过 List API 验证子分类出现在父分类的子列表中
+        list_resp = category_service.get_category_list(parent_id)
+        assert list_resp.ok, f"获取子分类列表API请求失败: HTTP {list_resp.status_code}"
+        assert list_resp.json["code"] == 200, f"获取子分类列表失败: {list_resp.json}"
+        target = next((i for i in list_resp.json["data"]["list"] if i["id"] == sub_category_id), None)
+        assert target is not None, f"子分类 ID={sub_category_id} 未在列表中找到"
+
+        # 6. 删除子分类
+        resp = category_service.delete_category(sub_category_id)
+        assert resp.ok, f"删除子分类API请求失败: HTTP {resp.status_code}"
+        assert resp.code == 200, f"删除子分类失败: {resp.json}"
+
+        # 7. 数据库验证子分类已被删除
+        sql_del_sub = """
+            SELECT COUNT(*) AS cnt FROM pms_product_category WHERE id = %s
+        """
+        db_result = db.query(sql_del_sub, (sub_category_id,))
+        assert db_result[0]["cnt"] == 0, f"子分类未被删除: ID={sub_category_id}"
+
+        # 8. 数据库验证父分类仍然存在
+        sql_parent_exist = """
+            SELECT COUNT(*) AS cnt FROM pms_product_category WHERE id = %s
+        """
+        db_result = db.query(sql_parent_exist, (parent_id,))
+        assert db_result[0]["cnt"] == 1, f"父分类不应被删除: ID={parent_id}"
+
+        # 9. 清理：删除父分类
+        resp = category_service.delete_category(parent_id)
+        assert resp.ok, f"删除父分类API请求失败: HTTP {resp.status_code}"
+        assert resp.code == 200, f"删除父分类失败: {resp.json}"
+
+        # 10. 数据库验证父分类已被清理
+        db_result = db.query(sql_parent_exist, (parent_id,))
+        assert db_result[0]["cnt"] == 0, f"父分类未被清理: ID={parent_id}"

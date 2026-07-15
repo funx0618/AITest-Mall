@@ -23,3 +23,26 @@ test_create_category_hidden:
   keywords: "隐藏关键字"
   description: "测试分类描述-隐藏状态"
   product_attribute_id_list: []
+
+test_create_subcategory_and_delete:
+  parent_category:
+    name: "测试父分类_子分类流程"
+    parent_id: 0
+    product_unit: "个"
+    nav_status: 1
+    show_status: 1
+    sort: 300
+    icon: "icon-parent"
+    keywords: "父分类关键字"
+    description: "父分类描述-子分类流程"
+    product_attribute_id_list: []
+  sub_category:
+    name: "测试子分类_删除"
+    product_unit: "件"
+    nav_status: 1
+    show_status: 1
+    sort: 10
+    icon: "icon-child"
+    keywords: "子分类关键字"
+    description: "子分类描述-待删除"
+    product_attribute_id_list: []
