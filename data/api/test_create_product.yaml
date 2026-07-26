@@ -1,0 +1,36 @@
+# 创建商品测试数据 (对应 tests/api/admin/service_tests/test_create_product.py)
+
+test_create_product:
+  name: "自动化测试商品"
+  product_sn: "AUTO-TEST-001"
+  price: 99.99
+  original_price: 199.99
+  stock: 100
+  low_stock: 10
+  sub_title: "自动化测试副标题"
+  pic: "http://test.com/pic.jpg"
+  album_pics: "http://test.com/pic1.jpg,http://test.com/pic2.jpg"
+  unit: "件"
+  weight: 500
+  sort: 100
+  publish_status: 1    # 上架（创建后可在前端列表中查询到）
+  new_status: 0
+  recommand_status: 0
+  verify_status: 0     # 未审核
+  promotion_type: 0
+  gift_growth: 10
+  gift_point: 100
+  service_ids: "1,2"
+  keywords: "自动化,测试"
+  note: "自动化测试创建，请勿手动删除"
+  detail_title: "测试商品详情标题"
+  detail_desc: "测试商品详情描述"
+  detail_html: "<p>测试商品详情</p>"
+  detail_mobile_html: "<p>测试商品详情-移动端</p>"
+  member_price_list: []
+  product_ladder_list: []
+  product_full_reduction_list: []
+  sku_stock_list: []
+  product_attribute_value_list: []
+  subject_product_relation_list: []
+  prefrence_area_product_relation_list: []
