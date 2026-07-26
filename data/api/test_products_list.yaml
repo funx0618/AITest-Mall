@@ -1,0 +1,10 @@
+# 商品列表查询测试数据 (对应 tests/api/admin/service_tests/test_products_list.py)
+
+test_query_by_keyword:
+  keyword: "测试"
+
+test_query_by_publish_status:
+  publish_status: 1  # 已上架
+
+test_query_by_verify_status:
+  verify_status: 1  # 已审核

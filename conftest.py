@@ -10,6 +10,7 @@ from ui.pages.admin.admin_login_page import LoginPage
 from ui.pages.app.app_login_page import AppLoginPage
 from api.admin.services.login_service import LoginService
 from api.app.services.login import AppLoginService
+from utils.db.db_client import DBClient
 
 # Web App 手机端视窗配置 (iPhone 12)
 MOBILE_VIEWPORT = {"width": 375, "height": 812}
@@ -118,3 +119,11 @@ def app_api_context(playwright: Playwright, app_token: str):
     )
     yield api_context
     api_context.dispose()
+
+
+@pytest.fixture(scope="session")
+def db():
+    """数据库客户端实例（整个测试会话共享一个连接，autocommit=True 保证无快照问题）"""
+    client = DBClient()
+    yield client
+    client.close()

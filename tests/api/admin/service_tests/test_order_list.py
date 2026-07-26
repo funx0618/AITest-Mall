@@ -20,14 +20,6 @@ def order_service(playwright: Playwright, admin_token: str):
 
 
 @pytest.fixture
-def db():
-    """数据库客户端实例"""
-    client = DBClient()
-    yield client
-    client.close()
-
-
-@pytest.fixture
 def test_data(request):
     """根据测试方法名自动加载对应测试数据"""
     data = load_yaml("api/test_order_list.yaml")
