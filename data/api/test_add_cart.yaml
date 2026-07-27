@@ -1,0 +1,4 @@
+# 添加购物车测试数据 (对应 tests/api/app/service_tests/test_add_cart.yaml)
+
+test_add_cart:
+  quantity: 2
