@@ -1,8 +1,19 @@
 # 订单流程测试数据 (对应 tests/api/app/flow_tests/test_app_order.yaml)
 
 test_add_cart_and_cancel_order:
+  product_id: 26       # 华为 HUAWEI P20
+  sku_id: 110          # 金色 16G
   product_name: "华为 HUAWEI P20"
   quantity: 1
   pay_type: 1          # 支付方式：1=支付宝
   use_integration: 0   # 不使用积分
   coupon_id: 0         # 不使用优惠券
+
+test_add_cart_with_coupon_and_cancel_order:
+  product_id: 26       # 华为 HUAWEI P20
+  sku_id: 110          # 金色 16G
+  product_name: "华为 HUAWEI P20"
+  quantity: 1
+  pay_type: 1          # 支付方式：1=支付宝
+  use_integration: 0   # 不使用积分
+  coupon_name: "手机国家补贴卷"
