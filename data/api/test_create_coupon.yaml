@@ -1,0 +1,14 @@
+# 创建优惠券测试数据 (对应 tests/api/admin/service_tests/test_create_coupon.py)
+
+test_create_coupon:
+  name: "自动化测试优惠券"
+  type: 0                # 0→全场赠券
+  platform: 0            # 0→全部平台
+  amount: 10.00          # 优惠金额
+  per_limit: 1           # 每人限领1张
+  min_point: 0.00        # 无门槛
+  use_type: 0            # 0→全场通用
+  note: "自动化测试创建的优惠券"
+  publish_count: 100
+  code: "AUTO-COUPON-001"
+  member_level: 0        # 0→无限制
