@@ -33,7 +33,7 @@ def order_service(playwright: Playwright, app_token: str):
 @pytest.fixture
 def test_data(request):
     """根据测试方法名自动加载对应测试数据"""
-    data = load_yaml("api/test_app_order.yaml")
+    data = load_yaml("api/test_order_flow.yaml")
     return data[request.function.__name__]
 
 
@@ -51,9 +51,10 @@ class TestAppOrderFlow:
         # ==================== 1. 准备：查询商品和收货地址 ====================
         product_row = db.query(
             "SELECT id, price, name, brand_id, product_category_id "
-            "FROM pms_product WHERE publish_status = 1 AND delete_status = 0 LIMIT 1"
+            "FROM pms_product WHERE name = %s AND publish_status = 1 AND delete_status = 0",
+            (test_data["product_name"],),
         )
-        assert len(product_row) > 0, "数据库中无上架商品"
+        assert len(product_row) > 0, f"未找到上架商品: {test_data['product_name']}"
         product_id = product_row[0]["id"]
 
         sku_row = db.query(
@@ -73,6 +74,7 @@ class TestAppOrderFlow:
         # ==================== 2. 加购 ====================
         quantity = test_data["quantity"]
         resp = cart_service.add_cart(product_id, product_sku_id, quantity)
+        # 这里的resp的ok是判断接口通不通，code是判断业务成不成
         assert resp.ok, f"加购请求失败: HTTP {resp.status_code}"
         assert resp.code == 200, f"加购失败: {resp.json}"
 
@@ -90,6 +92,13 @@ class TestAppOrderFlow:
         assert resp.ok, f"生成确认单请求失败: HTTP {resp.status_code}"
         assert resp.code == 200, f"生成确认单失败: {resp.json}"
 
+        # 记录确认单中的期望金额
+        calc_amount = resp.data["calcAmount"]
+        expected_total = float(calc_amount["totalAmount"])
+        expected_freight = float(calc_amount["freightAmount"])
+        expected_promotion = float(calc_amount["promotionAmount"])
+        expected_pay = float(calc_amount["payAmount"])
+
         # ==================== 4. 提交订单 ====================
         order_param = {
             "memberReceiveAddressId": address_id,
@@ -103,6 +112,17 @@ class TestAppOrderFlow:
         order_id = resp.data["order"]["id"]
         assert order_id, f"提交订单未返回订单ID: {resp.json}"
 
+        # 验证订单金额（API 返回）
+        order_data = resp.data["order"]
+        assert float(order_data["totalAmount"]) == expected_total, \
+            f"订单总金额不匹配: 期望 {expected_total}, 实际 {order_data['totalAmount']}"
+        assert float(order_data["payAmount"]) == expected_pay, \
+            f"订单实付金额不匹配: 期望 {expected_pay}, 实际 {order_data['payAmount']}"
+        assert float(order_data["freightAmount"]) == expected_freight, \
+            f"订单运费不匹配: 期望 {expected_freight}, 实际 {order_data['freightAmount']}"
+        assert float(order_data["promotionAmount"]) == expected_promotion, \
+            f"订单促销优惠不匹配: 期望 {expected_promotion}, 实际 {order_data['promotionAmount']}"
+
         # 验证订单已创建
         order_row = db.query(
             "SELECT * FROM oms_order WHERE id = %s", (order_id,)
@@ -112,6 +132,10 @@ class TestAppOrderFlow:
         assert order["status"] == 0, f"订单状态应为待付款(0)，实际: {order['status']}"
         assert order["delete_status"] in (0, None), \
             f"订单删除状态异常: {order['delete_status']}"
+        assert float(order["total_amount"]) == expected_total, \
+            f"DB订单总金额不匹配: 期望 {expected_total}, 实际 {order['total_amount']}"
+        assert float(order["pay_amount"]) == expected_pay, \
+            f"DB订单实付金额不匹配: 期望 {expected_pay}, 实际 {order['pay_amount']}"
 
         # 验证订单明细
         item_rows = db.query(
