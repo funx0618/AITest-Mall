@@ -19,7 +19,7 @@ test_add_cart_with_coupon_and_cancel_order:
   coupon_name: "手机国家补贴卷"
 
 test_add_cart_with_flash_coupon_and_cancel_order:
-  product_id: 26       # 华为 HUAWEI P20（秒杀商品）
+  product_id: 26       # 华为 HUAWEI P20（秒杀商品，单品折扣商品，秒杀优先级大于单品优惠）
   sku_id: 110          # 金色 16G
   product_name: "华为 HUAWEI P20"
   quantity: 1
