@@ -17,3 +17,12 @@ test_add_cart_with_coupon_and_cancel_order:
   pay_type: 1          # 支付方式：1=支付宝
   use_integration: 0   # 不使用积分
   coupon_name: "手机国家补贴卷"
+
+test_add_cart_with_flash_coupon_and_cancel_order:
+  product_id: 26       # 华为 HUAWEI P20（秒杀商品）
+  sku_id: 110          # 金色 16G
+  product_name: "华为 HUAWEI P20"
+  quantity: 1
+  pay_type: 1          # 支付方式：1=支付宝
+  use_integration: 0   # 不使用积分
+  coupon_name: "手机国家补贴卷"
