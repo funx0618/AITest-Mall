@@ -1,0 +1,5 @@
+# 角色列表测试数据 (对应 test_role.py)
+
+test_add_role:
+  role_name: "营销管理员"
+  description: "营销管理员"
