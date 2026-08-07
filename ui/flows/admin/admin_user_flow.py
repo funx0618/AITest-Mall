@@ -27,3 +27,46 @@ class AdminUserFlow:
         self.admin_page.goto()
         self.admin_page.search(keyword)
         return self.admin_page.get_all_row_data()
+
+    # ========== 新增用户流程 ==========
+    def add_user(self, username: str, password: str, nickname: str, email: str):
+        """新增用户
+
+        Args:
+            username: 帐号
+            password: 密码
+            nickname: 姓名
+            email: 邮箱
+        """
+        self.admin_page.goto()
+        self.admin_page.click_add()
+        self.admin_page.fill_add_form(username, password, nickname, email)
+        self.admin_page.save_add()
+        return self
+
+    # ========== 分配角色流程 ==========
+    def assign_role(self, username: str, role_name: str):
+        """为用户分配角色
+
+        Args:
+            username: 用户名
+            role_name: 角色名称
+        """
+        self.admin_page.search(username)
+        self.admin_page.click_assign_role_by_username(username)
+        self.admin_page.select_role_in_dialog(role_name)
+        self.admin_page.save_assign_role()
+        return self
+
+    # ========== 删除用户流程 ==========
+    def delete_user(self, username: str):
+        """删除指定用户
+
+        Args:
+            username: 要删除的用户名
+        """
+        self.admin_page.goto()
+        self.admin_page.search(username)
+        self.admin_page.click_delete_by_username(username)
+        self.admin_page.confirm_delete()
+        return self

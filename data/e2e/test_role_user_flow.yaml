@@ -1,0 +1,20 @@
+# 角色用户端到端测试数据 (对应 test_role_user_flow.py)
+
+test_role_user_flow:
+  role_name: "营销管理员"
+  role_description: "只拥有营销模块的菜单权限"
+  menu_names:
+    - "营销"
+  resource_names:
+    - "营销模块"
+  username: "testmarketing"
+  password: "123456"
+  nickname: "营销测试员"
+  email: "testmarketing@mall.com"
+  expected_menus:
+    - "营销"
+  not_expected_menus:
+    - "商品"
+    - "订单"
+    - "权限"
+    - "首页"

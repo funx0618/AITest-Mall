@@ -54,3 +54,51 @@ class RoleFlow:
         self.role_page.click_delete_by_role_name(role_name)
         self.role_page.confirm_delete()
         return self
+
+    # ========== 分配菜单流程 ==========
+    def assign_menu(self, role_name: str, menu_names: list[str]):
+        """为角色分配菜单
+
+        Args:
+            role_name: 角色名称
+            menu_names: 要分配的菜单名称列表
+        """
+        self.role_page.search(role_name)
+        self.role_page.click_assign_menu_by_role_name(role_name)
+        # 先取消所有已勾选的菜单
+        self.role_page.unselect_all_menus()
+        # 展开并勾选指定菜单
+        for menu_name in menu_names:
+            self.role_page.expand_menu_node(menu_name)
+            self.role_page.select_menu_item(menu_name)
+        self.role_page.save_assign_menu()
+        return self
+
+    # ========== 取消分配菜单流程 ==========
+    def unassign_all_menus(self, role_name: str):
+        """取消角色的所有菜单分配
+
+        Args:
+            role_name: 角色名称
+        """
+        self.role_page.search(role_name)
+        self.role_page.click_assign_menu_by_role_name(role_name)
+        self.role_page.unselect_all_menus()
+        self.role_page.save_assign_menu()
+        return self
+
+    # ========== 分配资源流程 ==========
+    def assign_resource(self, role_name: str, resource_names: list[str]):
+        """为角色分配资源（新角色资源默认为空，直接勾选即可）
+
+        Args:
+            role_name: 角色名称
+            resource_names: 要分配的资源名称列表
+        """
+        self.role_page.search(role_name)
+        self.role_page.click_assign_resource_by_role_name(role_name)
+        # 勾选指定资源模块
+        for resource_name in resource_names:
+            self.role_page.select_resource_item(resource_name)
+        self.role_page.save_assign_resource()
+        return self
