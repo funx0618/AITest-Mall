@@ -50,6 +50,7 @@ class RoleFlow:
         Args:
             role_name: 要删除的角色名称
         """
+        self.role_page.goto()
         self.role_page.search(role_name)
         self.role_page.click_delete_by_role_name(role_name)
         self.role_page.confirm_delete()

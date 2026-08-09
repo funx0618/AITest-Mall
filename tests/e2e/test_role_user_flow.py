@@ -19,7 +19,7 @@ test_data = load_yaml("e2e/test_role_user_flow.yaml")
 class TestRoleUserFlow:
     """角色 + 用户 + 菜单权限端到端测试"""
 
-    def test_role_user_flow(self, page: Page, playwright):
+    def test_role_user_flow(self, admin_logged_in_page: Page, playwright):
         """完整流程：新增角色 → 分配营销菜单 → 新增用户 → 登录验证只有营销菜单"""
         data = test_data["test_role_user_flow"]
         role_name = data["role_name"]
@@ -33,12 +33,9 @@ class TestRoleUserFlow:
         expected_menus = data["expected_menus"]
         not_expected_menus = data["not_expected_menus"]
 
-        # 使用admin账号登录（需要admin权限才能创建角色和用户）
-        login_page = LoginPage(page)
-        login_page.goto()
-        login_page.login("admin", "macro123")
-        expect(page).to_have_url(re.compile(r".*#/home"), timeout=15000)
-        admin_page = page
+        # 使用conftest中的admin_logged_in_page fixture（已自动登录admin）
+        admin_page = admin_logged_in_page
+        login_page = LoginPage(admin_page)
 
         user_flow = AdminUserFlow(admin_page)
         role_flow = RoleFlow(admin_page)
@@ -70,7 +67,10 @@ class TestRoleUserFlow:
         admin_page.locator(".avatar-container .avatar-wrapper").click()
         admin_page.get_by_role("menuitem", name="退出").click()
         # 等待退出完成，回到登录页
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
         expect(login_page.username_input).to_be_visible(timeout=10000)
+        expect(login_page.password_input).to_be_visible(timeout=5000)
+        expect(login_page.login_btn).to_be_enabled(timeout=5000)
         login_page.login(username, password)
         # 等待登录结果
         expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
@@ -79,22 +79,25 @@ class TestRoleUserFlow:
         # 展开菜单：点击左上角三条横线图标展开侧边栏，等待菜单项文字出现
         hamburger = admin_page.locator('.hamburger-container')
         hamburger.click()
-        # 等待侧边栏展开（菜单项出现文字"营销"）
-        expect(admin_page.get_by_role('menuitem', name='营销')).to_be_visible(timeout=5000)
+        # 等待侧边栏展开（菜单项出现文字）
+        expect(admin_page.locator("div.el-sub-menu__title", has_text=expected_menus[0])).to_be_visible(timeout=5000)
 
         # 验证期望的菜单可见
         for menu_name in expected_menus:
-            expect(admin_page.get_by_role('menuitem', name=menu_name)).to_be_visible(timeout=5000)
+            expect(admin_page.locator("div.el-sub-menu__title", has_text=menu_name)).to_be_visible(timeout=5000)
 
         # 验证不应出现的菜单不可见
         for menu_name in not_expected_menus:
-            expect(admin_page.get_by_role('menuitem', name=menu_name)).to_be_hidden(timeout=5000)
+            expect(admin_page.locator("div.el-sub-menu__title", has_text=menu_name)).to_be_hidden(timeout=5000)
 
         # ===== 清理：用默认账号重新登录，删除测试数据 =====
         # 退出当前登录：点击右上角头像下拉箭头 → 点击退出
         admin_page.locator(".avatar-container .avatar-wrapper").click()
         admin_page.get_by_role("menuitem", name="退出").click()
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
         expect(login_page.username_input).to_be_visible(timeout=10000)
+        expect(login_page.password_input).to_be_visible(timeout=5000)
+        expect(login_page.login_btn).to_be_enabled(timeout=5000)
         login_page.login("admin", "macro123")
         expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
 

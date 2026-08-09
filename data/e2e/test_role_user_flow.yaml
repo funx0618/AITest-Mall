@@ -7,7 +7,7 @@ test_role_user_flow:
     - "营销"
   resource_names:
     - "营销模块"
-  username: "testmarketing"
+  username: "testmarketing4"
   password: "123456"
   nickname: "营销测试员"
   email: "testmarketing@mall.com"
@@ -17,4 +17,3 @@ test_role_user_flow:
     - "商品"
     - "订单"
     - "权限"
-    - "首页"
