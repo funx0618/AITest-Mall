@@ -92,3 +92,17 @@ class AppOrderService(ApiClient):
         )
         from api.clients.api_response import build_api_response
         return build_api_response(resp, "POST /order/deleteOrder")
+
+    def pay_success(self, order_id: int, pay_type: int) -> ApiResponse:
+        """模拟支付成功回调
+        POST /order/paySuccess
+        参数：orderId, payType
+        """
+        url = f"{self.BASE_URL}/order/paySuccess"
+        resp = self._api_context.post(
+            url,
+            form={"orderId": order_id, "payType": pay_type},
+            headers=self._get_auth_header(),
+        )
+        from api.clients.api_response import build_api_response
+        return build_api_response(resp, "POST /order/paySuccess")

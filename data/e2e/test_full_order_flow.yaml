@@ -1,0 +1,13 @@
+# 端到端全流程测试数据 (对应 test_full_order_flow.py)
+
+# 完整下单流程：加购 → 确认单 → 提交订单 → 支付宝支付 → 后台发货 → 确认收货
+test_full_order_flow_no_discount:
+  product_id: 27         # 小米8（有秒杀促销，promotion_type=3）
+  sku_id: 98             # 默认SKU
+  product_name: "小米8 全面屏游戏智能手机 6GB+64GB 黑色"
+  quantity: 1
+  pay_type: 1            # 支付方式：1=支付宝
+  use_integration: 0     # 不使用积分
+  promotion_type: 3      # 买赠促销
+  delivery_company: "圆通快递"
+  delivery_prefix: "YT"
