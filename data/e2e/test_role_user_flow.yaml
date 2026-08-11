@@ -24,3 +24,26 @@ test_disabled_user_cannot_login:
   password: "123456"
   nickname: "禁用测试员"
   email: "testdisabled@mall.com"
+
+test_role_switch:
+  role_name: "订单管理员"
+  role_description: "只拥有订单模块的菜单权限"
+  menu_names:
+    - "订单列表"
+  menu_expand_parents:
+    - "订单"
+  resource_names:
+    - "订单管理"
+  username: "testorder03"
+  password: "123456"
+  nickname: "订单测试员"
+  email: "testorder@mall.com"
+  new_role_name: "商品管理员"
+  expected_menus:
+    - "订单"
+  expected_submenus:
+    - "订单列表"
+  not_expected_menus:
+    - "商品"
+    - "营销"
+    - "权限"

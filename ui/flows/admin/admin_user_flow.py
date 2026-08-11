@@ -47,7 +47,7 @@ class AdminUserFlow:
 
     # ========== 分配角色流程 ==========
     def assign_role(self, username: str, role_name: str):
-        """为用户分配角色
+        """为用户分配角色（el-select 单选，选择新角色自动替换旧角色）
 
         Args:
             username: 用户名

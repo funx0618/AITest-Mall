@@ -153,3 +153,127 @@ class TestRoleUserFlow:
         expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
 
         user_flow.delete_user(username)
+
+    def test_role_switch(self, admin_logged_in_page: Page, playwright):
+        """验证切换用户角色后菜单权限正确变化
+
+        流程：
+        1. 新增角色(订单管理员) + 分配菜单(订单) + 分配资源(订单列表)
+        2. 新增用户，分配订单管理员角色
+        3. 登录验证：只有订单下的订单列表子菜单
+        4. 退出，将用户角色改为商品管理员
+        5. 登录验证：有商品下的商品子菜单，没有订单下的订单列表
+        """
+        data = test_data["test_role_switch"]
+        role_name = data["role_name"]
+        role_description = data["role_description"]
+        menu_names = data["menu_names"]
+        menu_expand_parents = data.get("menu_expand_parents", [])
+        resource_names = data["resource_names"]
+        username = data["username"]
+        password = data["password"]
+        nickname = data["nickname"]
+        email = data["email"]
+        new_role_name = data["new_role_name"]
+        expected_menus = data["expected_menus"]
+        expected_submenus = data["expected_submenus"]
+        not_expected_menus = data["not_expected_menus"]
+
+        admin_page = admin_logged_in_page
+        login_page = LoginPage(admin_page)
+
+        user_flow = AdminUserFlow(admin_page)
+        role_flow = RoleFlow(admin_page)
+
+        # ===== Step 1: 新增订单管理员角色（如果已存在则先删除） =====
+        existing_roles = role_flow.search_role(role_name)
+        if existing_roles:
+            role_flow.unassign_all_menus(role_name)
+            role_flow.delete_role(role_name)
+        role_flow.add_role(role_name, role_description)
+
+        # ===== Step 2: 分配订单菜单和资源 =====
+        role_flow.assign_menu(role_name, menu_names, expand_only=menu_expand_parents)
+        role_flow.assign_resource(role_name, resource_names)
+
+        # ===== Step 3: 新增用户并分配订单管理员角色 =====
+        existing_users = user_flow.search_user(username)
+        if existing_users:
+            user_flow.delete_user(username)
+        user_flow.add_user(username, password, nickname, email)
+        user_flow.assign_role(username, role_name)
+
+        # ===== Step 4: 登录验证只有订单菜单 =====
+        admin_page.locator(".avatar-container .avatar-wrapper").click()
+        admin_page.get_by_role("menuitem", name="退出").click()
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
+        expect(login_page.username_input).to_be_visible(timeout=10000)
+        expect(login_page.password_input).to_be_visible(timeout=5000)
+        expect(login_page.login_btn).to_be_enabled(timeout=5000)
+        login_page.login(username, password)
+        expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=20000)
+
+        # 展开侧边栏
+        admin_page.locator('.hamburger-container').click()
+        expect(admin_page.locator("div.el-sub-menu__title", has_text=expected_menus[0])).to_be_visible(timeout=5000)
+
+        # 验证期望的顶层菜单可见
+        for menu_name in expected_menus:
+            expect(admin_page.locator("div.el-sub-menu__title", has_text=menu_name)).to_be_visible(timeout=5000)
+
+        # 验证不应出现的顶层菜单不可见
+        for menu_name in not_expected_menus:
+            expect(admin_page.locator("div.el-sub-menu__title", has_text=menu_name)).to_be_hidden(timeout=5000)
+
+        # 验证订单下的子菜单
+        order_menu = admin_page.locator("div.el-sub-menu__title", has_text="订单")
+        order_menu.click()
+        for sub_name in expected_submenus:
+            expect(admin_page.locator("li.el-menu-item", has_text=sub_name)).to_be_visible(timeout=5000)
+
+        # ===== Step 5: 退出，将用户角色改为商品管理员 =====
+        admin_page.locator(".avatar-container .avatar-wrapper").click()
+        admin_page.get_by_role("menuitem", name="退出").click()
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
+        expect(login_page.username_input).to_be_visible(timeout=10000)
+        login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
+
+        user_flow.admin_page.goto()
+        user_flow.assign_role(username, new_role_name)
+
+        # ===== Step 6: 登录验证菜单已切换 =====
+        admin_page.locator(".avatar-container .avatar-wrapper").click()
+        admin_page.get_by_role("menuitem", name="退出").click()
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
+        expect(login_page.username_input).to_be_visible(timeout=10000)
+        expect(login_page.password_input).to_be_visible(timeout=5000)
+        expect(login_page.login_btn).to_be_enabled(timeout=5000)
+        login_page.login(username, password)
+        expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
+
+        # 展开侧边栏
+        admin_page.locator('.hamburger-container').click()
+        expect(admin_page.locator("div.el-sub-menu__title", has_text="商品")).to_be_visible(timeout=5000)
+
+        # 验证商品下的商品子菜单可见（展开商品菜单查看子项）
+        product_menu = admin_page.locator("div.el-sub-menu__title", has_text="商品")
+        product_menu.click()
+        expect(admin_page.get_by_role("link", name="商品列表")).to_be_visible(timeout=5000)
+
+        # 验证订单下订单列表不可见（点击展开订单菜单，检查子项）
+        order_menu = admin_page.locator("div.el-sub-menu__title", has_text="订单")
+        if order_menu.is_visible():
+            order_menu.click()
+            expect(admin_page.locator("li.el-menu-item", has_text="订单列表")).to_be_hidden(timeout=5000)
+
+        # ===== 清理 =====
+        admin_page.locator(".avatar-container .avatar-wrapper").click()
+        admin_page.get_by_role("menuitem", name="退出").click()
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
+        expect(login_page.username_input).to_be_visible(timeout=10000)
+        login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
+
+        user_flow.delete_user(username)
+        role_flow.delete_role(role_name)

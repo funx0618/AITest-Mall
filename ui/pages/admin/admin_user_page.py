@@ -218,14 +218,30 @@ class AdminUserPage:
         return self
 
     def select_role_in_dialog(self, role_name: str):
-        """在分配角色弹窗中选择角色
+        """在分配角色弹窗中选择角色（多选模式：先移除已有标签，再选择新角色）
 
         Args:
             role_name: 角色名称
         """
+        # 移除已选中的角色标签（点击标签上的关闭图标）
+        existing_tags = self.assign_role_select.locator('.el-tag__close')
+        while existing_tags.count():
+            existing_tags.first.click()
+            self.page.wait_for_timeout(300)
+        # 点击下拉框触发弹出
         self.assign_role_select.click()
+        # 等待下拉面板出现
         dropdown = self.page.locator('.el-select-dropdown:visible')
-        dropdown.locator(f'.el-select-dropdown__item:has-text("{role_name}")').first.click()
+        expect(dropdown).to_be_visible(timeout=5000)
+        # 等待目标选项可见后点击
+        option = dropdown.locator(f'.el-select-dropdown__item:has-text("{role_name}")').first
+        expect(option).to_be_visible(timeout=5000)
+        option.click()
+        self.page.wait_for_timeout(300)
+        # 多选模式下点击选项不会自动关闭面板，需要点击外部区域收起
+        self.assign_role_dialog.locator('.el-dialog__header').click()
+        # 验证新角色标签已出现在选择框中
+        expect(self.assign_role_select.locator(f'.el-tag:has-text("{role_name}")')).to_be_visible(timeout=5000)
         return self
 
     def save_assign_role(self):

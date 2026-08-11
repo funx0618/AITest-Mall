@@ -57,17 +57,21 @@ class RoleFlow:
         return self
 
     # ========== 分配菜单流程 ==========
-    def assign_menu(self, role_name: str, menu_names: list[str]):
+    def assign_menu(self, role_name: str, menu_names: list[str], expand_only: list[str] | None = None):
         """为角色分配菜单
 
         Args:
             role_name: 角色名称
-            menu_names: 要分配的菜单名称列表
+            menu_names: 要勾选的菜单名称列表
+            expand_only: 仅展开不勾选的父节点名称列表（用于展开子菜单前需要先展开父节点的场景）
         """
         self.role_page.search(role_name)
         self.role_page.click_assign_menu_by_role_name(role_name)
         # 先取消所有已勾选的菜单
         self.role_page.unselect_all_menus()
+        # 展开需要展开但不勾选的父节点
+        for parent_name in (expand_only or []):
+            self.role_page.expand_menu_node(parent_name)
         # 展开并勾选指定菜单
         for menu_name in menu_names:
             self.role_page.expand_menu_node(menu_name)
