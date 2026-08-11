@@ -17,3 +17,10 @@ test_role_user_flow:
     - "商品"
     - "订单"
     - "权限"
+
+test_disabled_user_cannot_login:
+  role_name: "商品管理员"
+  username: "testdisabled01"
+  password: "123456"
+  nickname: "禁用测试员"
+  email: "testdisabled@mall.com"

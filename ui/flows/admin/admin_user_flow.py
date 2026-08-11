@@ -29,7 +29,7 @@ class AdminUserFlow:
         return self.admin_page.get_all_row_data()
 
     # ========== 新增用户流程 ==========
-    def add_user(self, username: str, password: str, nickname: str, email: str):
+    def add_user(self, username: str, password: str, nickname: str, email: str, enabled: bool = True):
         """新增用户
 
         Args:
@@ -37,10 +37,11 @@ class AdminUserFlow:
             password: 密码
             nickname: 姓名
             email: 邮箱
+            enabled: 是否启用，默认 True
         """
         self.admin_page.goto()
         self.admin_page.click_add()
-        self.admin_page.fill_add_form(username, password, nickname, email)
+        self.admin_page.fill_add_form(username, password, nickname, email, enabled)
         self.admin_page.save_add()
         return self
 
@@ -56,6 +57,19 @@ class AdminUserFlow:
         self.admin_page.click_assign_role_by_username(username)
         self.admin_page.select_role_in_dialog(role_name)
         self.admin_page.save_assign_role()
+        return self
+
+    # ========== 修改用户启用状态流程 ==========
+    def set_user_disabled(self, username: str):
+        """将用户设置为禁用状态
+
+        Args:
+            username: 用户名
+        """
+        self.admin_page.search(username)
+        self.admin_page.click_edit_by_username(username)
+        self.admin_page.set_enabled(False)
+        self.admin_page.save_edit()
         return self
 
     # ========== 删除用户流程 ==========

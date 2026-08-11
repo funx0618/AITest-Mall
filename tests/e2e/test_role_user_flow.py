@@ -108,3 +108,48 @@ class TestRoleUserFlow:
 
         # 删除角色（会自动级联删除角色-菜单、角色-用户关系）
         role_flow.delete_role(role_name)
+
+    def test_disabled_user_cannot_login(self, admin_logged_in_page: Page, playwright):
+        """验证被禁用的用户无法登录系统"""
+        data = test_data["test_disabled_user_cannot_login"]
+        role_name = data["role_name"]
+        username = data["username"]
+        password = data["password"]
+        nickname = data["nickname"]
+        email = data["email"]
+
+        admin_page = admin_logged_in_page
+        login_page = LoginPage(admin_page)
+
+        user_flow = AdminUserFlow(admin_page)
+        role_flow = RoleFlow(admin_page)
+
+        # ===== Step 1: 新增禁用用户（如果已存在则先删除） =====
+        existing_users = user_flow.search_user(username)
+        if existing_users:
+            user_flow.delete_user(username)
+        user_flow.add_user(username, password, nickname, email, enabled=False)
+
+        # ===== Step 2: 为用户分配商品管理员角色 =====
+        user_flow.assign_role(username, role_name)
+
+        # ===== Step 4: 验证该用户无法登录 =====
+        # 退出当前 admin
+        admin_page.locator(".avatar-container .avatar-wrapper").click()
+        admin_page.get_by_role("menuitem", name="退出").click()
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
+        expect(login_page.username_input).to_be_visible(timeout=10000)
+        expect(login_page.password_input).to_be_visible(timeout=5000)
+        expect(login_page.login_btn).to_be_enabled(timeout=5000)
+
+        # 尝试用禁用账号登录
+        login_page.login(username, password)
+        # 应停留在登录页并显示错误提示（一闪而过，用组合定位器快速捕获）
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
+        expect(login_page.error_message_containing("帐号已被禁用")).to_be_visible(timeout=5000)
+
+        # ===== 清理：重新登录 admin，删除测试数据 =====
+        login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
+
+        user_flow.delete_user(username)

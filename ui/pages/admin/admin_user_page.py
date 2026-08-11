@@ -35,6 +35,8 @@ class AdminUserPage:
         self.add_nickname_input = self.add_dialog.locator('.el-form-item:has(.el-form-item__label:has-text("姓名")) input')
         self.add_email_input = self.add_dialog.locator('.el-form-item:has(.el-form-item__label:has-text("邮箱")) input')
         self.add_remark_input = self.add_dialog.locator('.el-form-item:has(.el-form-item__label:has-text("备注")) textarea')
+        self.add_radio_enabled = self.add_dialog.locator('.el-form-item:has(.el-form-item__label:has-text("是否启用")) .el-radio:has-text("是")')
+        self.add_radio_disabled = self.add_dialog.locator('.el-form-item:has(.el-form-item__label:has-text("是否启用")) .el-radio:has-text("否")')
         self.add_save_btn = self.add_dialog.get_by_role('button', name='确 定')
         self.add_cancel_btn = self.add_dialog.get_by_role('button', name='取 消')
 
@@ -175,7 +177,7 @@ class AdminUserPage:
         expect(self.add_dialog).to_be_visible(timeout=5000)
         return self
 
-    def fill_add_form(self, username: str, password: str, nickname: str, email: str):
+    def fill_add_form(self, username: str, password: str, nickname: str, email: str, enabled: bool = True):
         """填写添加用户表单
 
         Args:
@@ -183,11 +185,16 @@ class AdminUserPage:
             password: 密码
             nickname: 姓名
             email: 邮箱
+            enabled: 是否启用，默认 True
         """
         self.add_username_input.fill(username)
         self.add_password_input.fill(password)
         self.add_nickname_input.fill(nickname)
         self.add_email_input.fill(email)
+        if enabled:
+            self.add_radio_enabled.click()
+        else:
+            self.add_radio_disabled.click()
         return self
 
     def save_add(self):
