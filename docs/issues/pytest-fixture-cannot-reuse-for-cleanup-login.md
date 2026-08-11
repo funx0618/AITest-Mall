@@ -79,3 +79,47 @@ def cleanup_admin_page(browser: Browser) -> Page:
 ## 结论
 
 **pytest function-scoped fixture 不支持在同一 page 上"重新执行"**，因此清理阶段需要退出后在同一 page 上重新登录，直接调用 `login_page.login()` 是最简单高效的方案。账号密码通过 `config.settings` 统一管理，避免硬编码。
+
+## 附录：为什么改 scope 为 class 也不行
+
+### `getfixturevalue` 不会重新执行 fixture
+
+尝试过在清理段使用 `request.getfixturevalue('admin_logged_in_page')`，实际运行结果：
+
+```
+admin_page.url = 'http://localhost:8090/#/login'  ← 未重新登录，page 仍停在登录页
+E   playwright._impl._errors.TimeoutError: ...     ← 后续操作超时失败
+```
+
+**核心原因**：`getfixturevalue` 的设计是"获取已解析的 fixture 值"，不是"重新执行 fixture"。
+
+### scope 只改变缓存生命周期，不改变"只执行一次"的本质
+
+| Scope | 缓存时机 | `getfixturevalue` 行为 |
+|---|---|---|
+| `function`（当前） | 每个测试方法执行一次 | 返回该方法已缓存的结果 |
+| `class` | 每个测试类执行一次 | 返回该类已缓存的结果 |
+| `session` | 整个会话执行一次 | 返回整个会话已缓存的结果 |
+
+**无论哪个 scope，`getfixturevalue` 都不会重新执行 fixture 函数体。**
+
+### 改为 class scope 还会引入新问题
+
+```python
+class TestRoleUserFlow:
+    def test_role_user_flow(self, admin_logged_in_page): ...
+        # 测试中途：退出 → 换用户登录 → 验证 → 退出
+        # page 状态已变为"登录页"
+
+    def test_another(self, admin_logged_in_page): ...
+        # ❌ 拿到的是已退出状态的 page，不是重新登录的 page
+```
+
+**class scope 下同一 class 内的多个测试共享同一个 page，一个测试的副作用会影响其他测试。**
+
+### 实测验证
+
+| 方式 | 结果 | 原因 |
+|---|---|---|
+| `request.getfixturevalue('admin_logged_in_page')` | ❌ FAILED | 返回缓存的旧 page，仍停在 `#/login` |
+| `login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)` | ✅ PASSED | 在同一 page 上直接执行登录操作 |
