@@ -80,8 +80,10 @@ class AdminUserPage:
         """输入搜索关键词并点击查询"""
         self.search_input.fill(keyword)
         self.search_btn.click()
-        # 等待表格数据加载完成
-        self.user_table.locator('tbody tr').first.locator('td').first.wait_for(state='attached', timeout=10000)
+        # 等待表格加载完成：有数据时等 td 渲染，无数据时等空态提示
+        first_td = self.user_table.locator('tbody tr').first.locator('td').nth(4)
+        empty_hint = self.page.locator('.el-table__empty-text').first
+        expect(first_td.or_(empty_hint)).to_be_attached(timeout=10000)
         return self
 
     # ========== 表格数据获取 ==========

@@ -84,7 +84,7 @@ class RolePage:
         self.search_btn.click()
         # 等待表格加载完成：有数据时等 td 渲染，无数据时等空态提示
         first_td = self.role_table.locator('tbody tr').first.locator('td').nth(4)
-        empty_hint = self.page.locator('.el-table__empty-text, .el-table__empty-block')
+        empty_hint = self.page.locator('.el-table__empty-text').first
         expect(first_td.or_(empty_hint)).to_be_attached(timeout=10000)
         return self
 

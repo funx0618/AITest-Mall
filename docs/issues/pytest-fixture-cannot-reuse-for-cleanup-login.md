@@ -123,3 +123,42 @@ class TestRoleUserFlow:
 |---|---|---|
 | `request.getfixturevalue('admin_logged_in_page')` | ❌ FAILED | 返回缓存的旧 page，仍停在 `#/login` |
 | `login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)` | ✅ PASSED | 在同一 page 上直接执行登录操作 |
+
+---
+
+## 附录：`getfixturevalue` 源码解析
+
+直接看 `_get_active_fixturedef` 的核心逻辑：
+
+```python
+def _get_active_fixturedef(self, argname: str) -> FixtureDef[object]:
+    # 关键：如果已经存在，直接返回缓存的 fixturedef
+    fixturedef = self._fixture_defs.get(argname)
+    if fixturedef is not None:
+        self._check_scope(fixturedef, fixturedef._scope)
+        return fixturedef  # ← 直接返回，不重新执行
+
+    # 否则查找、执行、缓存...
+    fixturedef = fixturedefs[index]
+    fixturedef.execute(request=subrequest)
+    self._fixture_defs[argname] = fixturedef
+    return fixturedef
+```
+
+`getfixturevalue` 最终返回的是：
+
+```python
+return fixturedef.cached_result[0]  # ← 缓存中同一个对象的引用
+```
+
+**关键点**：`admin_logged_in_page` fixture 返回的是 `Page` 对象的引用（不是拷贝）。
+
+| 阶段 | `Page` 对象状态 |
+|------|----------------|
+| fixture 执行 | `yield admin_page` — 登录后 URL = `#/home` |
+| test Step 5 | 退出 → 重新登录新用户 → `#/home` |
+| 清理段 | 退出 → URL = `#/login` |
+| `getfixturevalue` | **返回同一个 `Page` 对象**，URL 仍 = `#/login` |
+
+`Page` 是可变对象，测试过程中修改了它的状态（退出登录），
+`getfixturevalue` 拿到的自然就是修改后的状态。**它不会重新执行 fixture 函数体里的登录代码。**
