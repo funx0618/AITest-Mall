@@ -7,6 +7,7 @@
 import re
 import pytest
 from playwright.sync_api import Page, expect
+from config.settings import DEFAULT_USERNAME, DEFAULT_PASSWORD
 from ui.pages.admin.admin_login_page import LoginPage
 from ui.flows.admin.role_flow import RoleFlow
 from ui.flows.admin.admin_user_flow import AdminUserFlow
@@ -98,7 +99,8 @@ class TestRoleUserFlow:
         expect(login_page.username_input).to_be_visible(timeout=10000)
         expect(login_page.password_input).to_be_visible(timeout=5000)
         expect(login_page.login_btn).to_be_enabled(timeout=5000)
-        login_page.login("admin", "macro123")
+        login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        # 等待登录完成，跳转到首页
         expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
 
         # 删除用户

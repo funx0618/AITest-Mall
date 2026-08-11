@@ -82,8 +82,10 @@ class RolePage:
         """输入搜索关键词并点击查询"""
         self.search_input.fill(keyword)
         self.search_btn.click()
-        # 等待表格数据加载完成（等待目标角色出现在表格中，或表格行加载完毕）
-        self.role_table.locator('tbody tr').first.locator('td').first.wait_for(state='attached', timeout=10000)
+        # 等待表格加载完成：有数据时等 td 渲染，无数据时等空态提示
+        first_td = self.role_table.locator('tbody tr').first.locator('td').nth(4)
+        empty_hint = self.page.locator('.el-table__empty-text, .el-table__empty-block')
+        expect(first_td.or_(empty_hint)).to_be_attached(timeout=10000)
         return self
 
     def wait_for_role_in_table(self, role_name: str, timeout: int = 10000):
@@ -108,9 +110,9 @@ class RolePage:
         return self.role_table.locator(f"tbody tr td:has-text('{text}')").first
 
     def get_all_rows(self):
-        """获取表格所有数据行（过滤空行）"""
+        """获取表格所有数据行（过滤空行和不完整的行）"""
         all_rows = self.role_table.locator("tbody tr").all()
-        return [row for row in all_rows if row.locator("td").count() > 0]
+        return [row for row in all_rows if row.locator("td").count() >= 5]
 
     def get_row_data(self, row) -> dict:
         """获取指定行的数据
@@ -121,6 +123,10 @@ class RolePage:
         Returns:
             dict: 包含 id, name, description, admin_count, create_time 的字典
         """
+        # 等待行内 td 渲染完成，至少5列才是有效数据行
+        td_count = row.locator("td").count()
+        if td_count < 5:
+            return None
         cells = row.locator("td").all()
         if len(cells) < 5:
             return None
