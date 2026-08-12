@@ -124,6 +124,11 @@ class TestRoleUserFlow:
         user_flow = AdminUserFlow(admin_page)
         role_flow = RoleFlow(admin_page)
 
+        # ===== Step 0: 确保商品管理员角色存在 =====
+        existing_roles = role_flow.search_role(role_name)
+        if not existing_roles:
+            role_flow.add_role(role_name, "拥有商品模块的菜单权限")
+
         # ===== Step 1: 新增禁用用户（如果已存在则先删除） =====
         existing_users = user_flow.search_user(username)
         if existing_users:
@@ -184,6 +189,11 @@ class TestRoleUserFlow:
 
         user_flow = AdminUserFlow(admin_page)
         role_flow = RoleFlow(admin_page)
+
+        # ===== Step 0: 确保商品管理员角色存在（Step 5 切换角色时需要） =====
+        existing_product_roles = role_flow.search_role(new_role_name)
+        if not existing_product_roles:
+            role_flow.add_role(new_role_name, "拥有商品模块的菜单权限")
 
         # ===== Step 1: 新增订单管理员角色（如果已存在则先删除） =====
         existing_roles = role_flow.search_role(role_name)

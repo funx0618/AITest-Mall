@@ -132,12 +132,12 @@ class RolePage:
             return None
 
         return {
-            "id": cells[0].inner_text(),
-            "name": cells[1].inner_text(),
-            "description": cells[2].inner_text(),
-            "admin_count": cells[3].inner_text(),
-            "create_time": cells[4].inner_text(),
-        }
+            "id": cells[0].inner_text().strip(),
+            "name": cells[1].inner_text().strip(),
+            "description": cells[2].inner_text().strip(),
+            "admin_count": cells[3].inner_text().strip(),
+            "create_time": cells[4].inner_text().strip(),
+        } if cells[0].inner_text().strip() else None
 
     def get_all_row_data(self) -> list[dict]:
         """获取所有行的数据"""

@@ -34,7 +34,7 @@ test_role_switch:
     - "订单"
   resource_names:
     - "订单管理"
-  username: "testorder03"
+  username: "testorder05"
   password: "123456"
   nickname: "订单测试员"
   email: "testorder@mall.com"

@@ -152,13 +152,13 @@ class AdminUserPage:
             return None
 
         return {
-            "id": cells[0].inner_text(),
-            "username": cells[1].inner_text(),
-            "nickname": cells[2].inner_text(),
-            "email": cells[3].inner_text(),
-            "create_time": cells[4].inner_text(),
-            "login_time": cells[5].inner_text(),
-        }
+            "id": cells[0].inner_text().strip(),
+            "username": cells[1].inner_text().strip(),
+            "nickname": cells[2].inner_text().strip(),
+            "email": cells[3].inner_text().strip(),
+            "create_time": cells[4].inner_text().strip(),
+            "login_time": cells[5].inner_text().strip(),
+        } if cells[0].inner_text().strip() else None
 
     def get_all_row_data(self) -> list[dict]:
         """获取所有行的数据"""
@@ -233,15 +233,20 @@ class AdminUserPage:
         # 等待下拉面板出现
         dropdown = self.page.locator('.el-select-dropdown:visible')
         expect(dropdown).to_be_visible(timeout=5000)
-        # 等待目标选项可见后点击
+        # 等待目标选项可见后点击（最多重试3次，防止Element UI下拉框点击未生效）
         option = dropdown.locator(f'.el-select-dropdown__item:has-text("{role_name}")').first
         expect(option).to_be_visible(timeout=5000)
-        option.click()
-        self.page.wait_for_timeout(300)
+        tag = self.assign_role_select.locator(f'.el-tag:has-text("{role_name}")')
+        for attempt in range(3):
+            option.click()
+            try:
+                expect(tag).to_be_visible(timeout=2000)
+                break
+            except AssertionError:
+                if attempt == 2:
+                    raise
         # 多选模式下点击选项不会自动关闭面板，需要点击外部区域收起
         self.assign_role_dialog.locator('.el-dialog__header').click()
-        # 验证新角色标签已出现在选择框中
-        expect(self.assign_role_select.locator(f'.el-tag:has-text("{role_name}")')).to_be_visible(timeout=5000)
         return self
 
     def save_assign_role(self):
