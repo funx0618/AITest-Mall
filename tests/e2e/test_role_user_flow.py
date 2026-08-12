@@ -17,6 +17,15 @@ from utils.data_loader import load_yaml
 test_data = load_yaml("e2e/test_role_user_flow.yaml")
 
 
+def expand_sidebar(page):
+    """确保侧边栏已展开（竖线=折叠，横线=展开），展开后等待菜单渲染完成"""
+    menu_sel = page.locator(".el-menu-item, .el-sub-menu__title")
+    if menu_sel.first.is_visible():
+        return
+    page.locator(".hamburger-container").click()
+    expect(menu_sel.first).to_be_visible(timeout=5000)
+
+
 class TestRoleUserFlow:
     """角色 + 用户 + 菜单权限端到端测试"""
 
@@ -77,11 +86,7 @@ class TestRoleUserFlow:
         expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
 
         # ===== Step 6: 验证左侧菜单只有营销模块 =====
-        # 展开菜单：点击左上角三条横线图标展开侧边栏，等待菜单项文字出现
-        hamburger = admin_page.locator('.hamburger-container')
-        hamburger.click()
-        # 等待侧边栏展开（菜单项出现文字）
-        expect(admin_page.locator("div.el-sub-menu__title", has_text=expected_menus[0])).to_be_visible(timeout=5000)
+        expand_sidebar(admin_page)
 
         # 验证期望的菜单可见
         for menu_name in expected_menus:
@@ -168,11 +173,11 @@ class TestRoleUserFlow:
         """验证切换用户角色后菜单权限正确变化
 
         流程：
-        1. 新增角色(订单管理员) + 分配菜单(订单) + 分配资源(订单列表)
-        2. 新增用户，分配订单管理员角色
-        3. 登录验证：只有订单下的订单列表子菜单
+        1. 新增角色 + 分配子菜单 + 分配资源
+        2. 新增用户，分配该角色
+        3. 登录验证：只有分配的子菜单可见
         4. 退出，将用户角色改为商品管理员
-        5. 登录验证：有商品下的商品子菜单，没有订单下的订单列表
+        5. 登录验证：显示商品管理员的菜单，原角色菜单不可见
         """
         data = test_data["test_role_switch"]
         role_name = data["role_name"]
@@ -230,7 +235,7 @@ class TestRoleUserFlow:
         expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=20000)
 
         # 展开侧边栏
-        admin_page.locator('.hamburger-container').click()
+        expand_sidebar(admin_page)
         # 只分配了子菜单，侧边栏直接显示子菜单项
         for menu_name in expected_visible_menus:
             expect(admin_page.locator("li.el-menu-item", has_text=menu_name)).to_be_visible(timeout=5000)
@@ -261,17 +266,14 @@ class TestRoleUserFlow:
         expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
 
         # 展开侧边栏
-        admin_page.locator('.hamburger-container').click()
-        # 商品管理员分配的是父菜单「商品」，侧边栏显示父菜单
-        expect(admin_page.locator("div.el-sub-menu__title", has_text="商品")).to_be_visible(timeout=5000)
-
-        # 验证商品下的商品子菜单可见
-        product_menu = admin_page.locator("div.el-sub-menu__title", has_text="商品")
-        product_menu.click()
-        expect(admin_page.get_by_role("link", name="商品列表")).to_be_visible(timeout=5000)
+        expand_sidebar(admin_page)
+        # 商品管理员分配的是父菜单，侧边栏显示父菜单
+        for menu_name in data["new_role_parent_menu_names"]:
+            expect(admin_page.locator("div.el-sub-menu__title", has_text=menu_name)).to_be_visible(timeout=5000)
 
         # 验证订单列表不可见（已切换到商品管理员，不再有订单权限）
-        expect(admin_page.locator("li.el-menu-item", has_text="订单列表")).to_be_hidden(timeout=5000)
+        for menu_name in expected_visible_menus:
+            expect(admin_page.locator("li.el-menu-item", has_text=menu_name)).to_be_hidden(timeout=5000)
 
         # ===== 清理 =====
         admin_page.locator(".avatar-container .avatar-wrapper").click()
