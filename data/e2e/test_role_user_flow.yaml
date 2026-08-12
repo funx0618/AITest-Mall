@@ -3,23 +3,27 @@
 test_role_user_flow:
   role_name: "营销管理员"
   role_description: "只拥有营销模块的菜单权限"
-  menu_names:
+  parent_menu_names:
     - "营销"
-  resource_names:
+  parent_resource_names:
     - "营销模块"
   username: "testmarketing4"
   password: "123456"
   nickname: "营销测试员"
   email: "testmarketing@mall.com"
-  expected_menus:
+  expected_parent_menus:
     - "营销"
-  not_expected_menus:
+  not_expected_parent_menus:
     - "商品"
     - "订单"
     - "权限"
 
 test_disabled_user_cannot_login:
   role_name: "商品管理员"
+  parent_menu_names:
+    - "商品"
+  parent_resource_names:
+    - "商品模块"
   username: "testdisabled01"
   password: "123456"
   nickname: "禁用测试员"

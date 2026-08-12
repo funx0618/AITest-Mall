@@ -69,7 +69,7 @@ class AdminUserPage:
         # 如果菜单折叠，先展开
         if not self.menu_permission.is_visible():
             self.hamburger.click()
-            expect(self.menu_permission).to_be_visible(timeout=5000)
+            expect(self.menu_permission).to_be_visible()
         # 点击 权限 -> 用户列表
         self.menu_permission.click()
         self.menu_user_list.click()
@@ -114,7 +114,7 @@ class AdminUserPage:
             if len(cells) > 1 and cells[1].inner_text().strip() == username:
                 row.locator('button:has-text("编辑")').click()
                 break
-        expect(self.edit_dialog).to_be_visible(timeout=5000)
+        expect(self.edit_dialog).to_be_visible()
         return self
 
     def set_enabled(self, enabled: bool):
@@ -129,7 +129,7 @@ class AdminUserPage:
         """点击确定保存编辑"""
         self.save_btn.click()
         self.confirm_btn.click()
-        expect(self.edit_dialog).to_be_hidden(timeout=5000)
+        expect(self.edit_dialog).to_be_hidden()
         return self
 
     def get_all_rows(self):
@@ -174,7 +174,7 @@ class AdminUserPage:
     def click_add(self):
         """点击添加按钮，打开添加弹窗"""
         self.add_btn.click()
-        expect(self.add_dialog).to_be_visible(timeout=5000)
+        expect(self.add_dialog).to_be_visible()
         return self
 
     def fill_add_form(self, username: str, password: str, nickname: str, email: str, enabled: bool = True):
@@ -200,12 +200,15 @@ class AdminUserPage:
     def save_add(self):
         """点击确定保存新增用户，并确认二次弹窗"""
         self.add_save_btn.click()
-        # 等待确认弹窗出现并点击确定
-        expect(self.confirm_btn).to_be_visible(timeout=5000)
-        self.confirm_btn.click()
-        expect(self.confirm_btn).to_be_hidden(timeout=5000)
+        # 等待第一个确认弹窗出现并点击确定
+        expect(self.confirm_btn.first).to_be_visible()
+        self.confirm_btn.first.click()
+        # 等待第二个确认弹窗（状态变更确认）出现并点击确定
+        expect(self.confirm_btn.first).to_be_visible()
+        self.confirm_btn.first.click()
+        expect(self.confirm_btn.first).to_be_hidden()
         # 等待添加弹窗关闭（确认后弹窗会自动关闭）
-        expect(self.add_dialog).to_be_hidden(timeout=5000)
+        expect(self.add_dialog).to_be_hidden()
         return self
 
     # ========== 分配角色操作 ==========
@@ -214,7 +217,7 @@ class AdminUserPage:
         row = self.user_table.locator(f'tbody tr:has(td:nth-child(2):has-text("{username}"))').first
         expect(row).to_be_visible(timeout=10000)
         row.locator('button:has-text("分配角色")').click()
-        expect(self.assign_role_dialog).to_be_visible(timeout=5000)
+        expect(self.assign_role_dialog).to_be_visible()
         return self
 
     def select_role_in_dialog(self, role_name: str):
@@ -232,10 +235,10 @@ class AdminUserPage:
         self.assign_role_select.click()
         # 等待下拉面板出现
         dropdown = self.page.locator('.el-select-dropdown:visible')
-        expect(dropdown).to_be_visible(timeout=5000)
+        expect(dropdown).to_be_visible()
         # 等待目标选项可见后点击（最多重试3次，防止Element UI下拉框点击未生效）
         option = dropdown.locator(f'.el-select-dropdown__item:has-text("{role_name}")').first
-        expect(option).to_be_visible(timeout=5000)
+        expect(option).to_be_visible()
         tag = self.assign_role_select.locator(f'.el-tag:has-text("{role_name}")')
         for attempt in range(3):
             option.click()
@@ -253,7 +256,7 @@ class AdminUserPage:
         """保存分配角色"""
         self.assign_role_save_btn.click()
         self.confirm_btn.click()
-        expect(self.assign_role_dialog).to_be_hidden(timeout=5000)
+        expect(self.assign_role_dialog).to_be_hidden()
         return self
 
     # ========== 删除用户操作 ==========
@@ -262,13 +265,13 @@ class AdminUserPage:
         row = self.user_table.locator(f'tbody tr:has(td:nth-child(2):has-text("{username}"))').first
         expect(row).to_be_visible(timeout=10000)
         row.locator('button:has-text("删除")').click()
-        expect(self.confirm_btn).to_be_visible(timeout=5000)
+        expect(self.confirm_btn).to_be_visible()
         return self
 
     def confirm_delete(self):
         """确认删除操作"""
         self.confirm_btn.click()
-        expect(self.confirm_btn).to_be_hidden(timeout=5000)
+        expect(self.confirm_btn).to_be_hidden()
         return self
 
 

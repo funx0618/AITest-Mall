@@ -25,14 +25,14 @@ class TestRoleUserFlow:
         data = test_data["test_role_user_flow"]
         role_name = data["role_name"]
         description = data["role_description"]
-        menu_names = data["menu_names"]
-        resource_names = data["resource_names"]
+        menu_names = data["parent_menu_names"]
+        resource_names = data["parent_resource_names"]
         username = data["username"]
         password = data["password"]
         nickname = data["nickname"]
         email = data["email"]
-        expected_menus = data["expected_menus"]
-        not_expected_menus = data["not_expected_menus"]
+        expected_menus = data["expected_parent_menus"]
+        not_expected_menus = data["not_expected_parent_menus"]
 
         # 使用conftest中的admin_logged_in_page fixture（已自动登录admin）
         admin_page = admin_logged_in_page
@@ -128,6 +128,8 @@ class TestRoleUserFlow:
         existing_roles = role_flow.search_role(role_name)
         if not existing_roles:
             role_flow.add_role(role_name, "拥有商品模块的菜单权限")
+            role_flow.assign_menu(role_name, data["parent_menu_names"])
+            role_flow.assign_resource(role_name, data["parent_resource_names"])
 
         # ===== Step 1: 新增禁用用户（如果已存在则先删除） =====
         existing_users = user_flow.search_user(username)
