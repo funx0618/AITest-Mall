@@ -72,10 +72,16 @@ class RoleFlow:
         # 展开需要展开但不勾选的父节点
         for parent_name in (expand_only or []):
             self.role_page.expand_menu_node(parent_name)
+            # 展开可能意外触发父节点复选框，取消父节点及其子节点的勾选
+            self.role_page.unselect_menu_item(parent_name)
         # 展开并勾选指定菜单
         for menu_name in menu_names:
             self.role_page.expand_menu_node(menu_name)
             self.role_page.select_menu_item(menu_name)
+        # 验证：确保只有指定的菜单被勾选
+        checked = self.role_page.get_checked_menu_names()
+        assert sorted(checked) == sorted(menu_names), \
+            f"菜单分配异常：期望勾选 {menu_names}，实际勾选了 {checked}"
         self.role_page.save_assign_menu()
         return self
 

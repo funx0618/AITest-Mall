@@ -198,12 +198,9 @@ class AdminUserPage:
         return self
 
     def save_add(self):
-        """点击确定保存新增用户，并确认二次弹窗"""
+        """点击确定保存新增用户，并确认弹窗"""
         self.add_save_btn.click()
-        # 等待第一个确认弹窗出现并点击确定
-        expect(self.confirm_btn.first).to_be_visible()
-        self.confirm_btn.first.click()
-        # 等待第二个确认弹窗（状态变更确认）出现并点击确定
+        # 等待确认弹窗出现并点击确定
         expect(self.confirm_btn.first).to_be_visible()
         self.confirm_btn.first.click()
         expect(self.confirm_btn.first).to_be_hidden()

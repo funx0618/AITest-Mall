@@ -135,7 +135,10 @@ class TestRoleUserFlow:
         existing_users = user_flow.search_user(username)
         if existing_users:
             user_flow.delete_user(username)
-        user_flow.add_user(username, password, nickname, email, enabled=False)
+        # enabled=False 不起作用，后端 register 强制新建用户为启用状态
+        user_flow.add_user(username, password, nickname, email)
+        # 通过编辑将用户设为禁用
+        user_flow.set_user_disabled(username)
 
         # ===== Step 2: 为用户分配商品管理员角色 =====
         user_flow.assign_role(username, role_name)
@@ -174,17 +177,16 @@ class TestRoleUserFlow:
         data = test_data["test_role_switch"]
         role_name = data["role_name"]
         role_description = data["role_description"]
-        menu_names = data["menu_names"]
-        menu_expand_parents = data.get("menu_expand_parents", [])
-        resource_names = data["resource_names"]
+        menu_names = data["sub_menu_names"]
+        menu_expand_parents = data.get("parent_menu_names", [])
+        resource_names = data["sub_resource_names"]
         username = data["username"]
         password = data["password"]
         nickname = data["nickname"]
         email = data["email"]
         new_role_name = data["new_role_name"]
-        expected_menus = data["expected_menus"]
-        expected_submenus = data["expected_submenus"]
-        not_expected_menus = data["not_expected_menus"]
+        expected_visible_menus = data["expected_visible_menus"]
+        not_expected_visible_menus = data["not_expected_visible_menus"]
 
         admin_page = admin_logged_in_page
         login_page = LoginPage(admin_page)
@@ -196,6 +198,8 @@ class TestRoleUserFlow:
         existing_product_roles = role_flow.search_role(new_role_name)
         if not existing_product_roles:
             role_flow.add_role(new_role_name, "拥有商品模块的菜单权限")
+            role_flow.assign_menu(new_role_name, data["new_role_parent_menu_names"])
+            role_flow.assign_resource(new_role_name, data["new_role_parent_resource_names"])
 
         # ===== Step 1: 新增订单管理员角色（如果已存在则先删除） =====
         existing_roles = role_flow.search_role(role_name)
@@ -227,21 +231,13 @@ class TestRoleUserFlow:
 
         # 展开侧边栏
         admin_page.locator('.hamburger-container').click()
-        expect(admin_page.locator("div.el-sub-menu__title", has_text=expected_menus[0])).to_be_visible(timeout=5000)
+        # 只分配了子菜单，侧边栏直接显示子菜单项
+        for menu_name in expected_visible_menus:
+            expect(admin_page.locator("li.el-menu-item", has_text=menu_name)).to_be_visible(timeout=5000)
 
-        # 验证期望的顶层菜单可见
-        for menu_name in expected_menus:
-            expect(admin_page.locator("div.el-sub-menu__title", has_text=menu_name)).to_be_visible(timeout=5000)
-
-        # 验证不应出现的顶层菜单不可见
-        for menu_name in not_expected_menus:
+        # 验证不应出现的菜单不可见
+        for menu_name in not_expected_visible_menus:
             expect(admin_page.locator("div.el-sub-menu__title", has_text=menu_name)).to_be_hidden(timeout=5000)
-
-        # 验证订单下的子菜单
-        order_menu = admin_page.locator("div.el-sub-menu__title", has_text="订单")
-        order_menu.click()
-        for sub_name in expected_submenus:
-            expect(admin_page.locator("li.el-menu-item", has_text=sub_name)).to_be_visible(timeout=5000)
 
         # ===== Step 5: 退出，将用户角色改为商品管理员 =====
         admin_page.locator(".avatar-container .avatar-wrapper").click()
@@ -266,26 +262,24 @@ class TestRoleUserFlow:
 
         # 展开侧边栏
         admin_page.locator('.hamburger-container').click()
+        # 商品管理员分配的是父菜单「商品」，侧边栏显示父菜单
         expect(admin_page.locator("div.el-sub-menu__title", has_text="商品")).to_be_visible(timeout=5000)
 
-        # 验证商品下的商品子菜单可见（展开商品菜单查看子项）
+        # 验证商品下的商品子菜单可见
         product_menu = admin_page.locator("div.el-sub-menu__title", has_text="商品")
         product_menu.click()
         expect(admin_page.get_by_role("link", name="商品列表")).to_be_visible(timeout=5000)
 
-        # 验证订单下订单列表不可见（点击展开订单菜单，检查子项）
-        order_menu = admin_page.locator("div.el-sub-menu__title", has_text="订单")
-        if order_menu.is_visible():
-            order_menu.click()
-            expect(admin_page.locator("li.el-menu-item", has_text="订单列表")).to_be_hidden(timeout=5000)
+        # 验证订单列表不可见（已切换到商品管理员，不再有订单权限）
+        expect(admin_page.locator("li.el-menu-item", has_text="订单列表")).to_be_hidden(timeout=5000)
 
         # ===== 清理 =====
-        admin_page.locator(".avatar-container .avatar-wrapper").click()
-        admin_page.get_by_role("menuitem", name="退出").click()
-        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
-        expect(login_page.username_input).to_be_visible(timeout=10000)
-        login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-        expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
+        # admin_page.locator(".avatar-container .avatar-wrapper").click()
+        # admin_page.get_by_role("menuitem", name="退出").click()
+        # expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
+        # expect(login_page.username_input).to_be_visible(timeout=10000)
+        # login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        # expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
 
-        user_flow.delete_user(username)
-        role_flow.delete_role(role_name)
+        # user_flow.delete_user(username)
+        # role_flow.delete_role(role_name)

@@ -246,17 +246,17 @@ class RolePage:
 
     # ========== 分配菜单弹窗操作 ==========
     def select_menu_item(self, menu_name: str):
-        """在分配菜单弹窗中，勾选指定菜单项（按文本匹配）"""
-        node = self.assign_menu_tree.locator(f'.el-tree-node:has(.el-tree-node__label:has-text("{menu_name}"))')
-        checkbox = node.locator('.el-checkbox').first
+        """在分配菜单弹窗中，勾选指定菜单项（精确文本匹配）"""
+        content = self.assign_menu_tree.locator(f'.el-tree-node__content:has(.el-tree-node__label:text-is("{menu_name}"))').first
+        checkbox = content.locator('.el-checkbox').first
         if not checkbox.locator('.is-checked').count():
             checkbox.click()
         return self
 
     def unselect_menu_item(self, menu_name: str):
-        """在分配菜单弹窗中，取消勾选指定菜单项"""
-        node = self.assign_menu_tree.locator(f'.el-tree-node:has(.el-tree-node__label:has-text("{menu_name}"))')
-        checkbox = node.locator('.el-checkbox').first
+        """在分配菜单弹窗中，取消勾选指定菜单项（精确文本匹配）"""
+        content = self.assign_menu_tree.locator(f'.el-tree-node__content:has(.el-tree-node__label:text-is("{menu_name}"))').first
+        checkbox = content.locator('.el-checkbox').first
         if checkbox.locator('.is-checked').count():
             checkbox.click()
         return self
@@ -269,10 +269,21 @@ class RolePage:
             checked = self.assign_menu_tree.locator('.el-checkbox.is-checked').first
         return self
 
+    def get_checked_menu_names(self) -> list[str]:
+        """获取所有已勾选的菜单项名称"""
+        checked_nodes = self.assign_menu_tree.locator('.el-checkbox.is-checked').all()
+        names = []
+        for cb in checked_nodes:
+            content = cb.locator('xpath=..')  # parent .el-tree-node__content
+            label = content.locator('.el-tree-node__label')
+            if label.count():
+                names.append(label.first.inner_text().strip())
+        return names
+
     def expand_menu_node(self, menu_name: str):
-        """展开指定菜单节点"""
-        node = self.assign_menu_tree.locator(f'.el-tree-node:has(.el-tree-node__label:has-text("{menu_name}"))')
-        arrow = node.locator('.el-tree-node__expand-icon').first
+        """展开指定菜单节点（精确文本匹配）"""
+        content = self.assign_menu_tree.locator(f'.el-tree-node__content:has(.el-tree-node__label:text-is("{menu_name}"))').first
+        arrow = content.locator('.el-tree-node__expand-icon').first
         if arrow.count() and 'is-leaf' not in (arrow.get_attribute('class') or ''):
             arrow.click()
         return self
