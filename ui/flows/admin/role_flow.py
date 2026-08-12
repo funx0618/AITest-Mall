@@ -57,36 +57,57 @@ class RoleFlow:
         return self
 
     # ========== 分配菜单流程 ==========
-    def assign_menu(self, role_name: str, menu_names: list[str], expand_only: list[str] | None = None):
-        """为角色分配菜单
+    def _open_menu_assignment(self, role_name: str):
+        """打开菜单分配页面并取消所有已勾选的菜单（内部方法）"""
+        self.role_page.search(role_name)
+        self.role_page.click_assign_menu_by_role_name(role_name)
+        self.role_page.unselect_all_menus()
+
+    def assign_parent_menu(self, role_name: str, parent_names: list[str]):
+        """分配父菜单（勾选父节点，子菜单自动级联勾选）
 
         Args:
             role_name: 角色名称
-            menu_names: 要勾选的菜单名称列表
-            expand_only: 仅展开不勾选的父节点名称列表（用于展开子菜单前需要先展开父节点的场景）
+            parent_names: 要勾选的父菜单名称列表
         """
-        self.role_page.search(role_name)
-        self.role_page.click_assign_menu_by_role_name(role_name)
-        # 先取消所有已勾选的菜单
-        self.role_page.unselect_all_menus()
-        # 展开需要展开但不勾选的父节点
-        for parent_name in (expand_only or []):
-            self.role_page.expand_menu_node(parent_name)
-            # 展开可能意外触发父节点复选框，取消父节点及其子节点的勾选
-            self.role_page.unselect_menu_item(parent_name)
-        # 展开并勾选指定菜单
-        for menu_name in menu_names:
-            self.role_page.expand_menu_node(menu_name)
-            self.role_page.select_menu_item(menu_name)
-        # 验证：确保指定的菜单都已勾选
+        self._open_menu_assignment(role_name)
+        for name in parent_names:
+            self.role_page.expand_menu_node(name)
+            self.role_page.select_menu_item(name)
+        # 验证：父菜单已勾选
         checked = self.role_page.get_checked_menu_names()
-        for name in menu_names:
+        for name in parent_names:
             assert name in checked, \
-                f"菜单分配异常：「{name}」未被勾选，当前勾选: {checked}"
-        # 验证：expand_only 的节点不应被勾选
-        for name in (expand_only or []):
+                f"父菜单分配异常：「{name}」未被勾选，当前勾选: {checked}"
+        self.role_page.save_assign_menu()
+        return self
+
+    def assign_sub_menu(self, role_name: str, sub_names: list[str], parent_names: list[str]):
+        """分配子菜单（只勾选子节点，不勾选父节点）
+
+        Args:
+            role_name: 角色名称
+            sub_names: 要勾选的子菜单名称列表
+            parent_names: 需要展开的父节点名称列表（仅展开，不勾选）
+        """
+        self._open_menu_assignment(role_name)
+        # 先展开父节点（不勾选）
+        for parent_name in parent_names:
+            self.role_page.expand_menu_node(parent_name)
+            self.role_page.unselect_menu_item(parent_name)
+        # 勾选子菜单
+        for name in sub_names:
+            self.role_page.expand_menu_node(name)
+            self.role_page.select_menu_item(name)
+        # 验证：子菜单已勾选
+        checked = self.role_page.get_checked_menu_names()
+        for name in sub_names:
+            assert name in checked, \
+                f"子菜单分配异常：「{name}」未被勾选，当前勾选: {checked}"
+        # 验证：父节点未被勾选
+        for name in parent_names:
             assert name not in checked, \
-                f"菜单分配异常：「{name}」不应被勾选（仅展开），当前勾选: {checked}"
+                f"子菜单分配异常：父节点「{name}」不应被勾选，当前勾选: {checked}"
         self.role_page.save_assign_menu()
         return self
 

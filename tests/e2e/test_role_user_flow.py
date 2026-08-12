@@ -48,8 +48,8 @@ class TestRoleUserFlow:
             role_flow.delete_role(role_name)
         role_flow.add_role(role_name, description)
 
-        # ===== Step 2: 为角色分配营销菜单 =====
-        role_flow.assign_menu(role_name, menu_names)
+        # ===== Step 2: 为角色分配营销菜单（父菜单） =====
+        role_flow.assign_parent_menu(role_name, menu_names)
 
         # ===== Step 2.5: 为角色分配营销资源 =====
         role_flow.assign_resource(role_name, resource_names)
@@ -128,7 +128,7 @@ class TestRoleUserFlow:
         existing_roles = role_flow.search_role(role_name)
         if not existing_roles:
             role_flow.add_role(role_name, "拥有商品模块的菜单权限")
-            role_flow.assign_menu(role_name, data["parent_menu_names"])
+            role_flow.assign_parent_menu(role_name, data["parent_menu_names"])
             role_flow.assign_resource(role_name, data["parent_resource_names"])
 
         # ===== Step 1: 新增禁用用户（如果已存在则先删除） =====
@@ -198,7 +198,7 @@ class TestRoleUserFlow:
         existing_product_roles = role_flow.search_role(new_role_name)
         if not existing_product_roles:
             role_flow.add_role(new_role_name, "拥有商品模块的菜单权限")
-            role_flow.assign_menu(new_role_name, data["new_role_parent_menu_names"])
+            role_flow.assign_parent_menu(new_role_name, data["new_role_parent_menu_names"])
             role_flow.assign_resource(new_role_name, data["new_role_parent_resource_names"])
 
         # ===== Step 1: 新增订单管理员角色（如果已存在则先删除） =====
@@ -209,7 +209,7 @@ class TestRoleUserFlow:
         role_flow.add_role(role_name, role_description)
 
         # ===== Step 2: 分配订单菜单和资源 =====
-        role_flow.assign_menu(role_name, menu_names, expand_only=menu_expand_parents)
+        role_flow.assign_sub_menu(role_name, menu_names, parent_names=menu_expand_parents)
         role_flow.assign_resource(role_name, resource_names)
 
         # ===== Step 3: 新增用户并分配订单管理员角色 =====
