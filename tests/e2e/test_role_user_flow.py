@@ -274,12 +274,12 @@ class TestRoleUserFlow:
         expect(admin_page.locator("li.el-menu-item", has_text="订单列表")).to_be_hidden(timeout=5000)
 
         # ===== 清理 =====
-        # admin_page.locator(".avatar-container .avatar-wrapper").click()
-        # admin_page.get_by_role("menuitem", name="退出").click()
-        # expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
-        # expect(login_page.username_input).to_be_visible(timeout=10000)
-        # login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-        # expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
+        admin_page.locator(".avatar-container .avatar-wrapper").click()
+        admin_page.get_by_role("menuitem", name="退出").click()
+        expect(admin_page).to_have_url(re.compile(r".*#/login"), timeout=10000)
+        expect(login_page.username_input).to_be_visible(timeout=10000)
+        login_page.login(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        expect(admin_page).to_have_url(re.compile(r".*#/home"), timeout=15000)
 
-        # user_flow.delete_user(username)
-        # role_flow.delete_role(role_name)
+        user_flow.delete_user(username)
+        role_flow.delete_role(role_name)

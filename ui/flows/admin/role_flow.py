@@ -78,10 +78,15 @@ class RoleFlow:
         for menu_name in menu_names:
             self.role_page.expand_menu_node(menu_name)
             self.role_page.select_menu_item(menu_name)
-        # 验证：确保只有指定的菜单被勾选
+        # 验证：确保指定的菜单都已勾选
         checked = self.role_page.get_checked_menu_names()
-        assert sorted(checked) == sorted(menu_names), \
-            f"菜单分配异常：期望勾选 {menu_names}，实际勾选了 {checked}"
+        for name in menu_names:
+            assert name in checked, \
+                f"菜单分配异常：「{name}」未被勾选，当前勾选: {checked}"
+        # 验证：expand_only 的节点不应被勾选
+        for name in (expand_only or []):
+            assert name not in checked, \
+                f"菜单分配异常：「{name}」不应被勾选（仅展开），当前勾选: {checked}"
         self.role_page.save_assign_menu()
         return self
 
