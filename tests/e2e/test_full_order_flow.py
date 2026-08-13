@@ -183,7 +183,7 @@ class TestFullOrderFlow:
         assert item_rows[0]["product_id"] == product_id, \
             f"订单明细商品ID不匹配: 期望 {product_id}, 实际 {item_rows[0]['product_id']}"
 
-        # ==================== 5. 模拟支付（调用 paySuccess API） ====================
+        # ==================== 5. 模拟支付（调用 paySuccess A。PI） ====================
         resp = app_order_service.pay_success(order_id, test_data["pay_type"])
         assert resp.ok, f"支付请求失败: HTTP {resp.status_code}"
         assert resp.code == 200, f"支付失败: {resp.json}"
