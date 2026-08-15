@@ -1,9 +1,12 @@
 # 优惠券测试数据 (对应 tests/ui/admin/test_coupon.py)
 
-test_add_coupon_specified_product:
+test_add_coupon_specified_claim:
   coupon_name: "小米电视4A优惠卷自动化测试"
   platform: "全平台"
   total: "100"
   amount: "100"
   threshold: "2000"
   product_name: "小米（MI）小米电视4A"
+  specified_product_id: 33
+  other_product_id: 26
+  other_product_name: "华为 HUAWEI P20"
