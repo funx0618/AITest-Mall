@@ -1,4 +1,4 @@
-# 优惠券测试数据 (对应 tests/ui/admin/test_coupon.py)
+# 优惠券测试数据 (对应 tests/ui/test_coupon.py)
 
 test_add_coupon_specified_claim:
   coupon_name: "小米电视4A优惠卷自动化测试"
@@ -10,3 +10,35 @@ test_add_coupon_specified_claim:
   specified_product_id: 33
   other_product_id: 26
   other_product_name: "华为 HUAWEI P20"
+  status: "未过期"
+
+test_add_expired_coupon_all_products:
+  coupon_name: "过期优惠券全场通用自动化测试"
+  platform: "全平台"
+  total: "100"
+  amount: "50"
+  threshold: "100"
+  product_id: 33
+  validity_days_before: 30
+  validity_days_after: -1
+  status: "已过期"
+
+test_threshold_not_met_coupon:
+  coupon_name: "高门槛优惠券自动化测试"
+  platform: "全平台"
+  total: "100"
+  amount: "100"
+  threshold: "4000"
+  product_name: "小米（MI）小米电视4A"
+  specified_product_id: 33
+
+test_edit_coupon_category:
+  coupon_name: "指定分类优惠券自动化测试"
+  platform: "全平台"
+  total: "100"
+  amount: "50"
+  threshold: "100"
+  category_parent: "家用电器"
+  category_child: "电视"
+  claim_product_id: 33
+  new_coupon_name: "指定分类优惠券自动化测试-已修改"

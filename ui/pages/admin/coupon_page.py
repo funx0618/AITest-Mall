@@ -50,10 +50,16 @@ class CouponPage:
         self.validity_end_input = page.locator('.el-form-item:has-text("有效期") .el-date-editor').last.locator('input')
         # 可使用商品 - 指定商品
         self.radio_specified_product = page.locator('.el-radio-button:has-text("指定商品")')
+        # 可使用商品 - 指定分类
+        self.radio_specified_category = page.locator('.el-radio-button:has-text("指定分类")')
         # 指定商品搜索框
         self.product_search_input = page.locator('.el-select:has-text("商品名称/商品货号") input')
         # 添加商品按钮
         self.add_product_btn = page.get_by_role('button', name='添加')
+        # 商品分类选择器（指定分类模式下的分类名称输入框）
+        self.category_select_input = page.get_by_placeholder("请选择分类名称")
+        # 分类下拉选项
+        self.category_dropdown = page.locator('.el-select-dropdown:visible')
         # 提交按钮
         self.submit_btn = page.get_by_role('button', name='提交')
         # 重置按钮（添加页面）
@@ -115,6 +121,14 @@ class CouponPage:
     def cell_contain_text(self, text: str):
         """获取包含指定文本的单元格"""
         return self.coupon_table.locator(f"tbody tr td:has-text('{text}')").first
+
+    def verify_coupon_status(self, coupon_name: str, status: str):
+        """验证指定优惠券的状态"""
+        row = self.coupon_table.locator(
+            f'tbody tr:has(td:has-text("{coupon_name}"))'
+        ).first
+        expect(row.locator(f'td:has-text("{status}")')).to_be_visible(timeout=5000)
+        return self
 
     # ========== 添加优惠券表单操作 ==========
     def fill_name(self, name: str):
@@ -180,6 +194,53 @@ class CouponPage:
     def select_specified_product(self):
         """选择"指定商品"单选按钮"""
         self.radio_specified_product.click()
+        return self
+
+    def select_specified_category(self):
+        """选择"指定分类"单选按钮"""
+        self.radio_specified_category.click()
+        return self
+
+    def select_category(self, parent_name: str, child_name: str):
+        """选择商品分类
+
+        Args:
+            parent_name: 一级分类名称（如"家用电器"）
+            child_name: 二级分类名称（如"电视"）
+        """
+        expect(self.category_select_input).to_be_visible(timeout=5000)
+        self.category_select_input.click()
+        # 选择一级分类
+        parent_option = self.page.get_by_role('menuitem', name=parent_name).first
+        expect(parent_option).to_be_visible(timeout=10000)
+        parent_option.click()
+        # 选择二级分类
+        child_option = self.page.get_by_role('menuitem', name=child_name).first
+        expect(child_option).to_be_visible(timeout=10000)
+        child_option.click()
+        # 等待下拉菜单关闭
+        self.page.wait_for_timeout(1000)
+        # 点击添加按钮将分类添加到列表
+        self.add_product_btn.click()
+        return self
+
+    def click_edit_by_name(self, coupon_name: str):
+        """根据优惠券名称找到对应行，点击编辑按钮"""
+        row = self.coupon_table.locator(
+            f'tbody tr:has(td:nth-child(3):has-text("{coupon_name}"))'
+        ).first
+        expect(row).to_be_visible(timeout=10000)
+        row.locator('button:has-text("编辑")').click()
+        expect(self.coupon_name_input).to_be_visible(timeout=15000)
+        return self
+
+    def remove_all_categories(self):
+        """删除已添加的所有商品分类"""
+        # 找到分类表格中的所有删除按钮
+        delete_btns = self.page.locator('table:has(th:has-text("分类名称")) button:has-text("删除")')
+        while delete_btns.count() > 0:
+            delete_btns.first.click()
+            self.page.wait_for_timeout(500)
         return self
 
     def search_and_add_product(self, product_name: str):

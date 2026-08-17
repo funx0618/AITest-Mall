@@ -82,3 +82,12 @@ class AppProductPage:
         # 关闭弹窗
         self.page.keyboard.press("Escape")
         return self
+
+    def verify_already_claimed(self, coupon_name: str):
+        """验证已领取过该优惠券：打开优惠券弹窗 → 点击目标券 → 验证提示已领取"""
+        self.claim_coupon_entry.click()
+        coupon_item = self.page.locator(f'text="{coupon_name}"').first
+        expect(coupon_item).to_be_visible(timeout=10000)
+        coupon_item.click()
+        expect(self.page.get_by_text("您已经领取过该优惠券")).to_be_visible(timeout=10000)
+        return self
