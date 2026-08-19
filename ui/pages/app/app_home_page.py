@@ -54,3 +54,20 @@ class AppHomePage:
         """在搜索结果中点击包含指定名称的商品"""
         self.page.locator(f"text={name}").first.click()
         return self
+
+    # ========== 秒杀专区验证 ==========
+    def scroll_to_flash_sale(self):
+        """滚动到秒杀专区"""
+        flash_sale_section = self.page.locator("text=秒杀专区").first
+        flash_sale_section.scroll_into_view_if_needed()
+        expect(flash_sale_section).to_be_visible(timeout=10000)
+        return self
+
+    def verify_flash_sale_product_visible(self, product_name: str):
+        """验证秒杀专区中显示指定商品"""
+        # 先刷新页面确保数据同步
+        self.page.reload()
+        self.scroll_to_flash_sale()
+        # 秒杀专区的商品名称文本应可见
+        expect(self.page.get_by_text(product_name, exact=True)).to_be_visible(timeout=10000)
+        return self

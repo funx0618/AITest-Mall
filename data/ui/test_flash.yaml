@@ -1,0 +1,6 @@
+# 秒杀活动测试数据 (对应 tests/ui/test_flash.py)
+
+test_add_flash_sale_and_verify_app:
+  activity_title: "自动化秒杀活动"
+  product_name: "小米（MI）小米电视4A"
+  product_id: 33
