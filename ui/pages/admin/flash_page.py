@@ -54,7 +54,7 @@ class FlashPage:
         return self
 
     # ========== 搜索操作 ==========
-    def search(self, keyword: str):
+    def search(self, keyword: str): 
         """输入活动名称并点击查询"""
         self.search_input.fill(keyword)
         self.search_btn.click()
@@ -148,6 +148,12 @@ class FlashPage:
         row.locator('button:has-text("设置商品")').click()
         return self
 
+    def click_session_list(self):
+        """点击秒杀时间段列表按钮，进入时间段管理页面"""
+        self.page.get_by_role('button', name='秒杀时间段列表').click()
+        expect(self.page.get_by_role('button', name='添加')).to_be_visible(timeout=10000)
+        return self
+
     def click_delete_by_name(self, activity_name: str):
         """根据活动名称找到对应行，点击删除按钮并确认"""
         row = self.data_table.locator(
@@ -169,6 +175,9 @@ class FlashSessionPage:
     def __init__(self, page: Page):
         self.page = page
         self.session_table = page.locator("table").nth(1)
+
+        # ========== 添加时间段弹窗 ==========
+        self.add_btn = page.get_by_role("button", name="添加")
 
     def get_current_session_name(self) -> str:
         """根据当前北京时间获取对应的秒杀时间段名称"""
@@ -205,6 +214,107 @@ class FlashSessionPage:
         ).first
         expect(row).to_be_visible(timeout=10000)
         row.locator('button:has-text("商品列表")').click()
+        return self
+
+    # ========== 添加时间段操作 ==========
+    def open_add_dialog(self):
+        """点击添加按钮，等待弹窗出现"""
+        # 等待已有的消息提示消失，避免拦截点击
+        toast = self.page.locator('.el-message')
+        if toast.count() > 0:
+            toast.first.wait_for(state='hidden', timeout=10000)
+        self.add_btn.click()
+        dialog = self.page.get_by_role("dialog", name="添加时间段")
+        expect(dialog).to_be_visible(timeout=5000)
+        return self
+
+    def fill_session_name(self, name: str):
+        """填写秒杀时间段名称"""
+        self.page.get_by_role('textbox', name='秒杀时间段名称：').fill(name)
+        return self
+
+    def _select_time_value(self, time_str: str):
+        """在已打开的时间面板中选择指定时间值
+
+        Args:
+            time_str: 时间字符串，格式 "HH:mm:ss"，如 "23:00:00"
+        """
+        hour, minute, second = time_str.split(":")
+        panel = self.page.locator(".el-time-panel:visible")
+        expect(panel).to_be_visible(timeout=5000)
+        columns = panel.locator(".el-time-spinner__wrapper")
+
+        def _click_spinner(col_index: int, value: str):
+            """滚动 spinner 列到目标值并点击"""
+            item = columns.nth(col_index).locator(
+                ".el-time-spinner__item"
+            ).filter(has_text=value)
+            # 用 JS 滚动到目标项（Element Plus 用 transform 滚动）
+            item.evaluate(
+                "el => el.scrollIntoView({ block: 'center', behavior: 'instant' })"
+            )
+            item.click(force=True)
+
+        # 小时列
+        _click_spinner(0, hour)
+        # 分钟列
+        _click_spinner(1, minute)
+        # 秒列
+        _click_spinner(2, second)
+        # 点击面板确定按钮
+        panel.get_by_role("button", name="确定").click()
+        expect(panel).to_be_hidden(timeout=5000)
+
+    def set_session_start_time(self, time_str: str):
+        """选择每日开始时间"""
+        self.page.get_by_role('combobox', name='每日开始时间：').click()
+        self._select_time_value(time_str)
+        return self
+
+    def set_session_end_time(self, time_str: str):
+        """选择每日结束时间"""
+        self.page.get_by_role('combobox', name='每日结束时间：').click()
+        self._select_time_value(time_str)
+        return self
+
+    def confirm_add_session(self):
+        """点击确定按钮，处理可能弹出的提示消息框"""
+        self.page.get_by_role('button', name='确 定').click()
+        msg_box = self.page.locator('.el-overlay-message-box')
+        if msg_box.is_visible(timeout=3000):
+            self.page.get_by_role('button', name='确定').click()
+            expect(msg_box).to_be_hidden(timeout=5000)
+        expect(self.session_table).to_be_visible(timeout=10000)
+        return self
+
+    def verify_session_visible(self, session_name: str):
+        """验证时间段名称在表格中可见"""
+        cell = self.session_table.locator('tbody tr td').filter(
+            has=self.page.get_by_text(session_name, exact=True)
+        ).first
+        expect(cell).to_be_visible(timeout=10000)
+        return self
+
+    def verify_session_not_visible(self, session_name: str):
+        """验证时间段名称在表格中不可见"""
+        cell = self.session_table.locator('tbody tr td').filter(
+            has=self.page.get_by_text(session_name, exact=True)
+        )
+        expect(cell).to_have_count(0, timeout=5000)
+        return self
+
+    def click_delete_session_by_name(self, session_name: str):
+        """根据时间段名称找到对应行，点击删除按钮并确认"""
+        row = self.session_table.locator('tbody tr').filter(
+            has=self.page.get_by_text(session_name, exact=True)
+        ).first
+        expect(row).to_be_visible(timeout=10000)
+        row.locator('button:has-text("删除")').click()
+        confirm_btn = self.page.locator('.el-message-box__btns button:has-text("确定")')
+        expect(confirm_btn).to_be_visible(timeout=5000)
+        confirm_btn.click()
+        expect(confirm_btn).to_be_hidden(timeout=5000)
+        expect(row).to_be_hidden(timeout=10000)
         return self
 
 

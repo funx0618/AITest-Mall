@@ -4,3 +4,9 @@ test_add_flash_sale_and_verify_app:
   activity_title: "自动化秒杀活动"
   product_name: "小米（MI）小米电视4A"
   product_id: 33
+
+test_disabled_session_not_visible_in_product_list:
+  activity_title: "自动化秒杀活动-禁用时间段"
+  session_name: "23:00"
+  start_time: "23:00:00"
+  end_time: "23:59:59"

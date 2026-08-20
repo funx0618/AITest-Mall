@@ -44,29 +44,51 @@ class TestFlash:
         app_home.goto()
         app_home.verify_flash_sale_product_visible(product_name)
 
+
+
         # 删除秒杀活动，还原数据
         flow.delete_flash_sale(activity_title)
         flow.flash_page.search(activity_title)
         expect(flow.flash_page.page.locator('text=暂无数据')).to_be_visible(timeout=10000)
 
-    def test_time(self):
-        from datetime import datetime, timezone, timedelta
-        SHANGHAI_TZ = timezone(timedelta(hours=8))
-        current_hour = datetime.now(SHANGHAI_TZ).hour
-        print(f"Current hour: {current_hour}")
-        if 8 <= current_hour < 10:
-                    return "8:00"
-        elif 10 <= current_hour < 12:
-            return "10:00"
-        elif 12 <= current_hour < 14:
-            return "12:00"
-        elif 14 <= current_hour < 16:
-            return "14:00"
-        elif 16 <= current_hour < 18:
-            return "16:00"
-        elif 18 <= current_hour < 20:
-            return "18:00"
-        elif 20 <= current_hour < 22:
-            return "20:00"
-        else:
-            return "8:00"
+    def test_disabled_session_not_visible_in_product_list(self, admin_logged_in_page: Page):
+        """验证禁用的秒杀时间段在设置商品时不显示"""
+        data = test_data["test_disabled_session_not_visible_in_product_list"]
+        activity_title = data["activity_title"]
+        session_name = data["session_name"]
+        start_time = data["start_time"]
+        end_time = data["end_time"]
+
+        flow = FlashFlow(admin_logged_in_page)
+
+        # # 步骤1：新增秒杀活动
+        flow.add_flash_sale(title=activity_title)
+
+        # 搜索验证新增秒杀活动已创建
+        flow.flash_page.goto_list()
+        flow.flash_page.search(activity_title)
+        expect(flow.flash_page.cell_contain_text(activity_title)).to_be_visible()
+
+        # 步骤2：进入秒杀时间段页面，添加禁用的新时间段
+        flow.add_flash_session(
+            session_name=session_name,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        # 验证新时间段已在列表中显示
+        flow.session_page.verify_session_visible(session_name)
+
+        # 步骤3：回到秒杀活动列表，点击设置商品，验证禁用时间段不显示
+        flow.flash_page.goto_list()
+        flow.flash_page.search(activity_title)
+        flow.flash_page.click_set_product_by_name(activity_title)
+        flow.session_page.verify_session_not_visible(session_name)
+
+        # 清理：删除秒杀活动和新增的时间段（先刷新页面，确保菜单导航可用）
+        admin_logged_in_page.reload()
+        flow.flash_page.goto_list()
+        flow.delete_flash_sale(activity_title)
+        flow.flash_page.search(activity_title)
+        expect(flow.flash_page.page.locator('text=暂无数据')).to_be_visible(timeout=10000)
+        flow.delete_flash_session(session_name)
+

@@ -35,6 +35,18 @@ class FlashFlow:
         self.flash_page.confirm_add()
         return self
 
+    # ========== 删除秒杀时间段流程 ==========
+    def delete_flash_session(self, session_name: str):
+        """删除指定秒杀时间段
+
+        Args:
+            session_name: 时间段名称，如 "23:00"
+        """
+        self.flash_page.goto_list()
+        self.flash_page.click_session_list()
+        self.session_page.click_delete_session_by_name(session_name)
+        return self
+
     # ========== 设置秒杀商品流程 ==========
     def set_flash_product(self, activity_name: str, product_name: str, session_name: str = None):
         """为秒杀活动设置商品
@@ -65,4 +77,23 @@ class FlashFlow:
         self.flash_page.goto_list()
         self.flash_page.search(activity_name)
         self.flash_page.click_delete_by_name(activity_name)
+        return self
+
+    # ========== 新增秒杀时间段流程 ==========
+    def add_flash_session(self, session_name: str,
+                          start_time: str, end_time: str):
+        """在秒杀时间段页面添加时间段
+
+        Args:
+            session_name: 时间段名称，如 "23:00"
+            start_time: 每日开始时间，如 "23:00:00"
+            end_time: 每日结束时间，如 "24:00:00"
+        """
+        self.flash_page.goto_list()
+        self.flash_page.click_session_list()
+        self.session_page.open_add_dialog()
+        self.session_page.fill_session_name(session_name)
+        self.session_page.set_session_start_time(start_time)
+        self.session_page.set_session_end_time(end_time)
+        self.session_page.confirm_add_session()
         return self
