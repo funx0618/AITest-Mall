@@ -1,0 +1,6 @@
+# 全流程下单测试数据 (对应 test_full_order.py)
+
+test_place_order_no_discount:
+  product_id: 30
+  sku_id: 179
+  product_name: "HLA海澜之家简约动物印花短袖T恤"

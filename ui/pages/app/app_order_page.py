@@ -5,6 +5,7 @@ App My Order Page Object
 """
 
 import re
+from datetime import datetime
 from playwright.sync_api import Page, expect
 from config.settings import WEB_BASE_URL
 
@@ -21,12 +22,14 @@ class AppMyOrderPage:
         self.tab_all = page.get_by_text("全部", exact=True)
         self.tab_pending_receipt = page.get_by_text("待收货", exact=True)
         self.tab_completed = page.get_by_text("已完成", exact=True)
+        self.order_items = page.locator(".order-item")
 
         # ========== 订单详情页 ==========
         self.order_no = page.locator('[class*="order-no"], [class*="orderNo"], text=/\\d{15,}/')
         self.confirm_receipt_btn = page.get_by_text("确认收货")
         self.waiting_delivery = page.locator("text=等待发货")
         self.waiting_receipt = page.locator("text=待收货")
+        self.detail_status = page.locator('[class*="status"], [class*="order-status"]')
 
         # ========== 底部导航 ==========
         self.nav_my = page.get_by_text("我的", exact=True)
@@ -68,3 +71,62 @@ class AppMyOrderPage:
         # 点击弹窗中的"确定"文本（可能是 div/span 而非 button）
         self.page.get_by_text("确定", exact=True).last.click()
         return self
+
+    # ========== 订单查找与详情 ==========
+
+    def find_latest_order_by_product(self, product_name: str):
+        """在全部订单列表中，按商品名称查找并返回最新的订单
+
+        Args:
+            product_name: 商品名称
+
+        Returns:
+            匹配的最新订单 Locator
+        """
+        expect(self.order_items.first).to_be_visible(timeout=10000)
+        orders = self.order_items
+        matched_orders = []
+
+        for i in range(orders.count()):
+            order = orders.nth(i)
+            title = order.locator(".title.clamp")
+            if title.inner_text().strip() == product_name:
+                matched_orders.append(order)
+
+        assert matched_orders, f"未找到商品「{product_name}」对应的订单"
+
+        # 按订单时间倒序，获取最新订单
+        latest_order = max(
+            matched_orders,
+            key=lambda o: datetime.strptime(
+                o.locator(".time").inner_text().strip(),
+                "%Y-%m-%d %H:%M:%S"
+            )
+        )
+        return latest_order
+
+    def verify_order_status(self, order_locator, expected_status: str):
+        """验证订单列表中某个订单包含指定状态文本
+
+        Args:
+            order_locator: 订单元素 Locator
+            expected_status: 期望的状态文本，如 "等待发货"
+        """
+        expect(order_locator).to_contain_text(expected_status, timeout=5000)
+        return self
+
+    def click_order_to_detail(self, order_locator):
+        """点击订单进入详情页"""
+        order_locator.click()
+        expect(self.page.get_by_text("订单详情")).to_be_visible(timeout=10000)
+        return self
+
+    def get_order_no_from_detail(self) -> str:
+        """从订单详情页获取订单编号"""
+        order_no_row = self.page.locator(".yt-list-cell").filter(
+            has_text="订单编号"
+        )
+        expect(order_no_row).to_be_visible(timeout=10000)
+        order_no = order_no_row.locator(".cell-tip")
+        order_no_text = order_no.inner_text()
+        return order_no_text.strip()

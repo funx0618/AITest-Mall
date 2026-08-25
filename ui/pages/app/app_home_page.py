@@ -51,8 +51,15 @@ class AppHomePage:
         return self
 
     def click_product_by_name(self, name: str):
-        """在搜索结果中点击包含指定名称的商品"""
-        self.page.locator(f"text={name}").first.click()
+        """在搜索结果中点击包含指定名称的商品（排除搜索历史等干扰）"""
+        # 等待页面跳转到商品列表页
+        expect(self.page).to_have_url(re.compile(r"product/list"), timeout=10000)
+        # 使用 .goods-item 定位商品卡片，避免误点搜索历史
+        product_card = self.page.locator(".goods-item").filter(
+            has=self.page.get_by_text(name, exact=True)
+        )
+        expect(product_card).to_be_visible(timeout=10000)
+        product_card.click()
         return self
 
     # ========== 秒杀专区验证 ==========

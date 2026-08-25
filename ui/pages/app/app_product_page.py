@@ -17,8 +17,8 @@ class AppProductPage:
         self.page = page
 
         # ========== 商品信息 ==========
-        self.product_title = page.locator('[class*="product"] [class*="name"], [class*="goods"] [class*="name"]').first
-        self.product_price = page.locator('[class*="price"]').first
+        self.product_title = page.locator('.introduce-section .title')
+        self.product_price = page.locator('.introduce-section .price span')
 
         # ========== SKU 弹窗 ==========
         self.sku_popup = page.locator('[class*="sku"], [class*="popup--bottom"], .van-popup--bottom')
