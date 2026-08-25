@@ -130,3 +130,30 @@ class AppMyOrderPage:
         order_no = order_no_row.locator(".cell-tip")
         order_no_text = order_no.inner_text()
         return order_no_text.strip()
+
+    def get_submit_time_from_detail(self) -> str:
+        """从订单详情页获取提交时间，格式 %Y-%m-%d %H:%M:%S"""
+        time_row = self.page.locator(".yt-list-cell").filter(
+            has_text="提交时间"
+        )
+        expect(time_row).to_be_visible(timeout=10000)
+        return time_row.locator(".cell-tip").inner_text().strip()
+
+    def find_order_by_time_and_product(self, time_str: str, product_name: str):
+        """在当前 tab 的订单列表中，按创建时间和商品名称定位订单
+
+        Args:
+            time_str: 订单创建时间，如 "2026-08-25 16:48:29"
+            product_name: 商品名称
+
+        Returns:
+            匹配的订单 Locator
+        """
+        expect(self.order_items.first).to_be_visible(timeout=10000)
+        for i in range(self.order_items.count()):
+            order = self.order_items.nth(i)
+            time_text = order.locator(".time").inner_text().strip()
+            title_text = order.locator(".title.clamp").inner_text().strip()
+            if time_text == time_str and title_text == product_name:
+                return order
+        assert False, f"未找到创建时间={time_str}、商品={product_name} 的订单"

@@ -50,7 +50,7 @@ class AdminOrderPage:
     # ========== 发货操作 ==========
     def click_ship(self):
         """点击订单发货按钮，进入发货列表页面"""
-        ship_btn = self.order_table.locator('button:has-text("订单发货"), a:has-text("订单发货")')
+        ship_btn = self.order_table.locator('button:has-text("订单发货"), a:has-text("订单发货")').first
         expect(ship_btn).to_be_visible(timeout=10000)
         ship_btn.click()
         # 等待发货列表页面加载
@@ -88,4 +88,10 @@ class AdminOrderPage:
         confirm_dialog.locator('button:has-text("确定")').click()
         # 等待发货完成，页面回到订单列表
         expect(self.search_input).to_be_visible(timeout=10000)
+        return self
+
+    def verify_order_status_shipped(self):
+        """验证订单列表第一行状态为已发货"""
+        first_row = self.order_table.locator("tbody tr").first
+        expect(first_row).to_contain_text("已发货", timeout=10000)
         return self
