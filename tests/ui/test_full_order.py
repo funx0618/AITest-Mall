@@ -10,6 +10,7 @@ from ui.pages.app.app_cart_page import AppCartPage
 from ui.pages.app.app_checkout_page import AppCheckoutPage
 from ui.pages.app.app_order_page import AppMyOrderPage
 from ui.pages.admin.admin_order_page import AdminOrderPage
+from ui.flows.app.app_order_flow import AppOrderFlow
 from utils.data_loader import load_yaml
 
 # 加载测试数据（文件名与测试文件对应）
@@ -65,15 +66,16 @@ class TestFullOrder:
         app_logged_in.get_by_text("查看订单").click()
         expect(order_page.tab_all).to_be_visible(timeout=10000)
 
-        # 在全部tab下，按商品名称+时间找到最新订单，验证状态为待发货
+        # 在全部tab下，按商品名称找到最新订单，验证状态为待发货
         latest_order = order_page.find_latest_order_by_product(product_name)
         order_page.verify_order_status(latest_order, "等待发货")
+        # 从列表项直接获取提交时间，避免再去详情页获取
+        submit_time = latest_order.locator(".time").inner_text().strip()
 
-        # 点击订单进入详情页，验证详情页状态也是待发货，并获取订单编号和提交时间
+        # 点击订单进入详情页，验证详情页状态也是待发货，并获取订单编号
         order_page.click_order_to_detail(latest_order)
         expect(order_page.waiting_delivery).to_be_visible(timeout=10000)
         order_sn = order_page.get_order_no_from_detail()
-        submit_time = order_page.get_submit_time_from_detail()
 
         # Step 8: Admin后台根据订单编号搜索并发货
         admin_order = AdminOrderPage(admin_logged_in_page)
@@ -87,18 +89,9 @@ class TestFullOrder:
         admin_order.search_by_order_no(order_sn)
         admin_order.verify_order_status_shipped()
 
-        # Step 9: Web App 我的 → 待收货，验证订单状态"等待收货"，确认收货
-        app_logged_in.goto(AppHomePage.URL)
-        order_page.go_to_my_page()
-        order_page.click_tab("待收货")
-        pending_order = order_page.find_order_by_time_and_product(submit_time, product_name)
-        order_page.verify_order_status(pending_order, "等待收货")
-        confirm_btn = pending_order.get_by_text("确认收货")
-        expect(confirm_btn).to_be_visible(timeout=5000)
-        confirm_btn.evaluate("el => { el.scrollIntoView({block: 'center'}); el.click(); }")
-        # 弹窗确认
-        app_logged_in.get_by_text("是否要确认收货").wait_for(timeout=5000)
-        app_logged_in.get_by_text("确定", exact=True).last.click()
+        # Step 9: Web App 待收货，确认收货
+        app_flow = AppOrderFlow(app_logged_in)
+        app_flow.confirm_pending_receipt(submit_time, product_name)
 
         # Step 10: 切换到"已完成"tab，验证订单存在
         order_page.click_tab("已完成")

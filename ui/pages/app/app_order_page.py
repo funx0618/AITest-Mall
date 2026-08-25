@@ -36,8 +36,16 @@ class AppMyOrderPage:
 
     # ========== 页面导航 ==========
     def goto_orders(self):
-        """导航到全部订单页面"""
-        self.page.goto(self.ORDERS_URL)
+        """通过我的页面导航到全部订单页面"""
+        # 若当前页面没有底部导航栏（如订单详情/列表页），点击返回箭头回到我的页面
+        if not self.nav_my.is_visible():
+            self.page.go_back()
+        if not self.nav_my.is_visible():
+            self.page.go_back()
+            expect(self.nav_my).to_be_visible(timeout=10000)
+        self.nav_my.click()
+        self.page.get_by_text("全部订单").click()
+        expect(self.tab_all).to_be_visible(timeout=10000)
         return self
 
     # ========== 订单操作 ==========
@@ -130,14 +138,6 @@ class AppMyOrderPage:
         order_no = order_no_row.locator(".cell-tip")
         order_no_text = order_no.inner_text()
         return order_no_text.strip()
-
-    def get_submit_time_from_detail(self) -> str:
-        """从订单详情页获取提交时间，格式 %Y-%m-%d %H:%M:%S"""
-        time_row = self.page.locator(".yt-list-cell").filter(
-            has_text="提交时间"
-        )
-        expect(time_row).to_be_visible(timeout=10000)
-        return time_row.locator(".cell-tip").inner_text().strip()
 
     def find_order_by_time_and_product(self, time_str: str, product_name: str):
         """在当前 tab 的订单列表中，按创建时间和商品名称定位订单

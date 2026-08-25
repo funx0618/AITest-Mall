@@ -66,9 +66,25 @@ class AppOrderFlow:
         return self.order_page.get_order_no()
 
     # ========== Step 9: Web App 确认收货 ==========
-    def confirm_receipt_in_web(self):
-        """在 Web App 确认收货"""
+    def confirm_pending_receipt(self, submit_time: str, product_name: str):
+        """在待收货tab按时间和商品名定位订单，确认收货
+
+        Args:
+            submit_time: 订单提交时间，如 "2026-08-25 16:48:29"
+            product_name: 商品名称
+        """
         self.order_page.goto_orders()
         self.order_page.click_tab("待收货")
-        self.order_page.click_first_order()
-        self.order_page.confirm_receipt()
+        pending_order = self.order_page.find_order_by_time_and_product(
+            submit_time, product_name
+        )
+        self.order_page.verify_order_status(pending_order, "等待收货")
+        # uni-app 嵌套滚动容器，需 JS 滚动+点击
+        confirm_btn = pending_order.get_by_text("确认收货")
+        expect(confirm_btn).to_be_visible(timeout=5000)
+        confirm_btn.evaluate(
+            "el => { el.scrollIntoView({block: 'center'}); el.click(); }"
+        )
+        # 弹窗确认
+        self.web_page.get_by_text("是否要确认收货").wait_for(timeout=5000)
+        self.web_page.get_by_text("确定", exact=True).last.click()
