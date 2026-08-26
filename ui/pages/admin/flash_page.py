@@ -419,3 +419,35 @@ class FlashProductPage:
             f'tbody tr td:has-text("{product_name}")'
         ).first
         return cell.is_visible()
+
+    def click_edit_by_product_name(self, product_name: str):
+        """根据商品名称找到对应行，点击编辑按钮"""
+        row = self.product_table.locator(
+            f'tbody tr:has(td:has-text("{product_name}"))'
+        ).first
+        expect(row).to_be_visible(timeout=10000)
+        row.locator('button:has-text("编辑")').click()
+        # 等待编辑弹窗出现
+        expect(self.page.get_by_role('dialog')).to_be_visible(timeout=10000)
+        return self
+
+    def fill_flash_price(self, price: str):
+        """填写秒杀价格"""
+        price_input = self.page.get_by_role('dialog').locator(
+            'label:has-text("秒杀价格")'
+        ).locator('..').locator('input')
+        expect(price_input).to_be_visible(timeout=5000)
+        price_input.clear()
+        price_input.fill(price)
+        return self
+
+    def submit_edit(self):
+        """点击确定按钮，提交编辑"""
+        confirm_btn = self.page.get_by_role('dialog').get_by_role(
+            'button', name='确 定'
+        )
+        expect(confirm_btn).to_be_visible(timeout=5000)
+        confirm_btn.click()
+        # 处理确定后可能弹出的提示弹窗
+        self._dismiss_message_box()
+        return self

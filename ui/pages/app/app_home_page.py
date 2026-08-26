@@ -78,3 +78,18 @@ class AppHomePage:
         # 秒杀专区的商品名称文本应可见
         expect(self.page.get_by_text(product_name, exact=True)).to_be_visible(timeout=10000)
         return self
+
+    def click_flash_sale_product(self, product_name: str):
+        """点击秒杀专区中的指定商品，进入商品详情页
+
+        Args:
+            product_name: 商品名称
+        """
+        # 先刷新页面确保数据同步
+        self.page.reload()
+        self.scroll_to_flash_sale()
+        # 定位秒杀专区中包含商品名称的元素并点击（uni-app H5 结构）
+        product_item = self.page.get_by_text(product_name, exact=True).first
+        expect(product_item).to_be_visible(timeout=10000)
+        product_item.click()
+        return self

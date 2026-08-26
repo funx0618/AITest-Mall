@@ -28,7 +28,39 @@ class AppCheckoutPage:
         # ========== 地址列表页元素 ==========
         self.default_tag = page.locator("text=默认")
 
+# ========== 结算页元素（补充） ==========
+        self.coupon_selector = page.locator(".yt-list-cell").filter(
+            has=page.locator(".cell-tit", has_text="优惠券")
+        ).filter(
+            has_text="选择优惠券"
+        )
+
     # ========== 结算操作 ==========
+    def get_discount_amount(self, discount_name: str) -> str:
+        """获取指定优惠类型的优惠金额（如 活动优惠、优惠券）"""
+        row = self.page.locator(".yt-list-cell").filter(
+            has=self.page.locator(".cell-tit", has_text=discount_name)
+        ).filter(
+            has_not=self.page.locator(".cell-tip", has_text="选择")
+        )
+        expect(row).to_be_visible(timeout=10000)
+        return row.locator(".cell-tip").inner_text()
+
+    def get_actual_pay_amount(self) -> str:
+        """获取订单实付款金额"""
+        return self.page.locator(".footer .price-content .price").inner_text().strip()
+
+    def select_coupon(self, coupon_name: str):
+        """在结算页选择指定优惠券：点击优惠券行 → 弹窗中选择目标券 → 确认"""
+        expect(self.coupon_selector).to_be_visible(timeout=10000)
+        self.coupon_selector.click()
+        coupon_item = self.page.get_by_text(coupon_name, exact=True).first
+        expect(coupon_item).to_be_visible(timeout=10000)
+        coupon_item.click()
+        # 等待优惠券选择生效，弹窗关闭
+        expect(self.submit_order_btn).to_be_visible(timeout=10000)
+        return self
+
     def select_default_address(self):
         """在结算页选择默认收货地址"""
         self.address_link.click()

@@ -4,3 +4,14 @@ test_place_order_no_discount:
   product_id: 30
   sku_id: 179
   product_name: "HLA海澜之家简约动物印花短袖T恤"
+
+test_coupon_flash_order:
+  coupon_name: "秒杀专用优惠券"
+  platform: "全平台"
+  total: "100"
+  coupon_amount: "100"
+  threshold: "2000"
+  activity_title: "秒杀下单测试活动"
+  product_name: "小米（MI）小米电视4A"
+  original_price: "2499"
+  flash_price: "2100"

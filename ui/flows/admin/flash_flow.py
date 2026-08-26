@@ -67,6 +67,27 @@ class FlashFlow:
         self.product_page.confirm_select()
         return self
 
+    # ========== 编辑秒杀商品价格流程 ==========
+    def edit_flash_product_price(self, activity_name: str, product_name: str, flash_price: str, session_name: str = None):
+        """编辑秒杀商品的秒杀价格
+
+        Args:
+            activity_name: 秒杀活动名称
+            product_name: 商品名称
+            flash_price: 秒杀价格
+            session_name: 时间段名称，None 时自动获取当前时间所属的时间段
+        """
+        if session_name is None:
+            session_name = self.session_page.get_current_session_name()
+        self.flash_page.goto_list()
+        self.flash_page.search(activity_name)
+        self.flash_page.click_set_product_by_name(activity_name)
+        self.session_page.click_product_list(session_name)
+        self.product_page.click_edit_by_product_name(product_name)
+        self.product_page.fill_flash_price(flash_price)
+        self.product_page.submit_edit()
+        return self
+
     # ========== 删除秒杀活动流程 ==========
     def delete_flash_sale(self, activity_name: str):
         """删除指定秒杀活动
