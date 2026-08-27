@@ -72,13 +72,21 @@ class AppHomePage:
         expect(flash_sale_section).to_be_visible(timeout=10000)
         return self
 
+    def _flash_sale_section(self):
+        """获取秒杀专区的商品列表区域
+
+        DOM 结构：.f-header.m-t（标题） 和 .guess-section（商品列表）是 .container 下的兄弟节点
+        通过标题定位，取其下一个兄弟节点作为商品区域
+        """
+        flash_header = self.page.locator(".f-header.m-t").filter(has_text="秒杀专区")
+        return flash_header.locator("xpath=following-sibling::uni-view[1]")
+
     def verify_flash_sale_product_visible(self, product_name: str):
         """验证秒杀专区中显示指定商品"""
-        # 先刷新页面确保数据同步
         self.page.reload()
         self.scroll_to_flash_sale()
-        # 秒杀专区的商品名称文本应可见
-        expect(self.page.get_by_text(product_name, exact=True)).to_be_visible(timeout=10000)
+        section = self._flash_sale_section()
+        expect(section.get_by_text(product_name, exact=True).first).to_be_visible(timeout=10000)
         return self
 
     def click_flash_sale_product(self, product_name: str):
@@ -87,11 +95,10 @@ class AppHomePage:
         Args:
             product_name: 商品名称
         """
-        # 先刷新页面确保数据同步
         self.page.reload()
         self.scroll_to_flash_sale()
-        # 定位秒杀专区中包含商品名称的元素并点击（uni-app H5 结构）
-        product_item = self.page.get_by_text(product_name, exact=True).first
+        section = self._flash_sale_section()
+        product_item = section.get_by_text(product_name, exact=True).first
         expect(product_item).to_be_visible(timeout=10000)
         product_item.click()
         return self

@@ -39,17 +39,17 @@ class TestFlash:
             product_name=product_name,
         )
 
-        # 步骤3：App端验证秒杀专区中显示对应商品
-        app_home = AppHomePage(app_logged_in)
-        app_home.goto()
-        app_home.verify_flash_sale_product_visible(product_name)
+        # 步骤3 + 清理（try/finally 确保清理一定执行）
+        try:
+            app_home = AppHomePage(app_logged_in)
+            app_home.goto()
+            app_home.verify_flash_sale_product_visible(product_name)
 
-
-
-        # 删除秒杀活动，还原数据
-        flow.delete_flash_sale(activity_title)
-        flow.flash_page.search(activity_title)
-        expect(flow.flash_page.page.locator('text=暂无数据')).to_be_visible(timeout=10000)
+        finally:
+            # 删除秒杀活动，还原数据
+            flow.delete_flash_sale(activity_title)
+            flow.flash_page.search(activity_title)
+            expect(flow.flash_page.page.locator('text=暂无数据')).to_be_visible(timeout=10000)
 
     def test_disabled_session_not_visible_in_product_list(self, admin_logged_in_page: Page):
         """验证禁用的秒杀时间段在设置商品时不显示"""
@@ -78,17 +78,19 @@ class TestFlash:
         # 验证新时间段已在列表中显示
         flow.session_page.verify_session_visible(session_name)
 
-        # 步骤3：回到秒杀活动列表，点击设置商品，验证禁用时间段不显示
-        flow.flash_page.goto_list()
-        flow.flash_page.search(activity_title)
-        flow.flash_page.click_set_product_by_name(activity_title)
-        flow.session_page.verify_session_not_visible(session_name)
+        # 步骤3 + 清理（try/finally 确保清理一定执行）
+        try:
+            flow.flash_page.goto_list()
+            flow.flash_page.search(activity_title)
+            flow.flash_page.click_set_product_by_name(activity_title)
+            flow.session_page.verify_session_not_visible(session_name)
 
-        # 清理：删除秒杀活动和新增的时间段（先刷新页面，确保菜单导航可用）
-        admin_logged_in_page.reload()
-        flow.flash_page.goto_list()
-        flow.delete_flash_sale(activity_title)
-        flow.flash_page.search(activity_title)
-        expect(flow.flash_page.page.locator('text=暂无数据')).to_be_visible(timeout=10000)
-        flow.delete_flash_session(session_name)
+        finally:
+            # 清理：删除秒杀活动和新增的时间段
+            admin_logged_in_page.reload()
+            flow.flash_page.goto_list()
+            flow.delete_flash_sale(activity_title)
+            flow.flash_page.search(activity_title)
+            expect(flow.flash_page.page.locator('text=暂无数据')).to_be_visible(timeout=10000)
+            flow.delete_flash_session(session_name)
 
