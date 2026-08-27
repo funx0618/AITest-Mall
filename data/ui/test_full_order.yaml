@@ -15,3 +15,12 @@ test_coupon_flash_order:
   product_name: "小米（MI）小米电视4A"
   original_price: "2499"
   flash_price: "2100"
+
+test_coupon_order:
+  coupon_name: "下单专用优惠券"
+  platform: "全平台"
+  total: "100"
+  coupon_amount: "100"
+  threshold: "500"
+  product_name: "小米（MI）小米电视4A"
+  original_price: "2499"
