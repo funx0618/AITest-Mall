@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 from playwright.sync_api import Page, expect
 from config.settings import WEB_BASE_URL
+from ui.pages.app.app_tabbar import AppTabBar
 
 
 class AppMyOrderPage:
@@ -32,18 +33,14 @@ class AppMyOrderPage:
         self.detail_status = page.locator('[class*="status"], [class*="order-status"]')
 
         # ========== 底部导航 ==========
-        self.nav_my = page.get_by_text("我的", exact=True)
+        self.tabbar = AppTabBar(page)
 
     # ========== 页面导航 ==========
     def goto_orders(self):
         """通过我的页面导航到全部订单页面"""
-        # 若当前页面没有底部导航栏（如订单详情/列表页），点击返回箭头回到我的页面
-        if not self.nav_my.is_visible():
-            self.page.go_back()
-        if not self.nav_my.is_visible():
-            self.page.go_back()
-            expect(self.nav_my).to_be_visible(timeout=10000)
-        self.nav_my.click()
+        if not self.tabbar._is_visible():
+            self.tabbar.back_to_tabbar()
+        self.tabbar.click_my()
         self.page.get_by_text("全部订单").click()
         expect(self.tab_all).to_be_visible(timeout=10000)
         return self
@@ -51,7 +48,7 @@ class AppMyOrderPage:
     # ========== 订单操作 ==========
     def go_to_my_page(self):
         """从底部导航进入我的页面"""
-        self.nav_my.click()
+        self.tabbar.click_my()
         return self
 
     def click_tab(self, tab_name: str):

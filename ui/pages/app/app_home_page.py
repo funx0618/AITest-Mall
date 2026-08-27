@@ -6,6 +6,7 @@ App Home / Search Page Object
 
 from playwright.sync_api import Page, expect
 from config.settings import WEB_BASE_URL
+from ui.pages.app.app_tabbar import AppTabBar
 import re
 
 
@@ -26,14 +27,15 @@ class AppHomePage:
         self.no_more = page.locator("text=没有更多了")
 
         # ========== 底部导航 ==========
-        self.nav_home = page.get_by_text("首页", exact=True)
-        self.nav_cart = page.get_by_text("购物车", exact=True)
-        self.nav_my = page.get_by_text("我的", exact=True)
+        self.tabbar = AppTabBar(page)
 
     # ========== 页面导航 ==========
     def goto(self):
-        """导航到首页"""
-        self.page.goto(self.URL)
+        """通过底部导航进入首页，tabbar 不可见时通过返回箭头回到 tabbar 页面"""
+        if not self.tabbar._is_visible():
+            self.tabbar.back_to_tabbar()
+        self.tabbar.click_home()
+        expect(self.search_entry).to_be_visible(timeout=10000)
         return self
 
     # ========== 搜索操作 ==========

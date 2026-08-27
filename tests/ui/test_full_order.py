@@ -225,18 +225,18 @@ class TestFullOrder:
         product_name = data["product_name"]
 
         # ========== Admin 端：新增优惠券 ==========
-        # coupon_flow = CouponFlow(admin_logged_in_page)
-        # coupon_flow.add_coupon(
-        #     name=coupon_name,
-        #     platform=data["platform"],
-        #     total=data["total"],
-        #     amount=data["coupon_amount"],
-        #     threshold=data["threshold"],
-        # )
-        # # 搜索验证新增优惠券已创建
-        # coupon_flow.coupon_page.goto_list()
-        # coupon_flow.coupon_page.search(coupon_name)
-        # expect(coupon_flow.coupon_page.cell_contain_text(coupon_name)).to_be_visible()
+        coupon_flow = CouponFlow(admin_logged_in_page)
+        coupon_flow.add_coupon(
+            name=coupon_name,
+            platform=data["platform"],
+            total=data["total"],
+            amount=data["coupon_amount"],
+            threshold=data["threshold"],
+        )
+        # 搜索验证新增优惠券已创建
+        coupon_flow.coupon_page.goto_list()
+        coupon_flow.coupon_page.search(coupon_name)
+        expect(coupon_flow.coupon_page.cell_contain_text(coupon_name)).to_be_visible()
 
         # ========== App 端：搜索商品 → 领取优惠券 → 加购 → 结算 ==========
         home = AppHomePage(app_logged_in)
@@ -245,15 +245,11 @@ class TestFullOrder:
         checkout = AppCheckoutPage(app_logged_in)
         order_page = AppMyOrderPage(app_logged_in)
 
-        # Step 1: 首页搜索商品（预热 SPA 路由，确保后续搜索正常）
-        home.search(product_name)
-        home.click_product_by_name(product_name)
-
-        # Step 2: 清空购物车，避免历史数据影响
+        # Step 1: 清空购物车，避免历史数据影响
         cart.goto()
         cart.clear_cart()
 
-        # Step 3: 搜索商品，进入详情页
+        # Step 2: 搜索商品，进入详情页
         home.search(product_name)
         home.click_product_by_name(product_name)
         expect(product.product_title).to_be_visible()
@@ -298,8 +294,8 @@ class TestFullOrder:
         order_page.verify_order_status(latest_order, "等待发货")
 
         # ========== 清理数据：删除优惠券 ==========
-        # admin_logged_in_page.reload()
-        # coupon_flow.delete_coupon(coupon_name)
-        # coupon_flow.coupon_page.search(coupon_name)
-        # expect(coupon_flow.coupon_page.page.locator('text=暂无数据')).to_be_visible(timeout=10000)
+        admin_logged_in_page.reload()
+        coupon_flow.delete_coupon(coupon_name)
+        coupon_flow.coupon_page.search(coupon_name)
+        expect(coupon_flow.coupon_page.page.locator('text=暂无数据')).to_be_visible(timeout=10000)
 
