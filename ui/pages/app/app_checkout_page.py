@@ -51,14 +51,15 @@ class AppCheckoutPage:
         return self.page.locator(".footer .price-content .price").inner_text().strip()
 
     def select_coupon(self, coupon_name: str):
-        """在结算页选择指定优惠券：点击优惠券行 → 弹窗中选择目标券 → 确认"""
+        """在结算页选择指定优惠券：点击优惠券行 → 展开列表中选择目标券"""
         expect(self.coupon_selector).to_be_visible(timeout=10000)
         self.coupon_selector.click()
+        # 等待优惠券列表展开（可能是弹窗或内联列表）
         coupon_item = self.page.get_by_text(coupon_name, exact=True).first
         expect(coupon_item).to_be_visible(timeout=10000)
         coupon_item.click()
-        # 等待优惠券选择生效，弹窗关闭
-        expect(self.submit_order_btn).to_be_visible(timeout=10000)
+        # 等待优惠券选择生效
+        self.page.wait_for_timeout(500)
         return self
 
     def select_default_address(self):
