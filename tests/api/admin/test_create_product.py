@@ -10,7 +10,7 @@
 import pytest
 from playwright.sync_api import Playwright
 from config.settings import ADMIN_API_BASE_URL
-from api.admin.services.product_service import AdminProductService
+from api.admin.product_service import AdminProductService
 from utils.db.db_client import DBClient
 from utils.data_loader import load_yaml
 

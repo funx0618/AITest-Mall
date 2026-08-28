@@ -6,7 +6,7 @@ Login API 测试用例
 import pytest
 from playwright.sync_api import Playwright
 from config.settings import ADMIN_API_BASE_URL, DEFAULT_USERNAME, DEFAULT_PASSWORD
-from api.admin.services.login_service import LoginService
+from api.admin.login_service import LoginService
 
 
 @pytest.fixture

@@ -9,7 +9,7 @@ import pytest
 from datetime import datetime, timedelta
 from playwright.sync_api import Playwright
 from config.settings import ADMIN_API_BASE_URL
-from api.admin.services.coupon_service import AdminCouponService
+from api.admin.coupon_service import AdminCouponService
 from utils.db.db_client import DBClient
 from utils.data_loader import load_yaml
 

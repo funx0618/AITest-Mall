@@ -15,7 +15,7 @@ from config.settings import APP_API_BASE_URL, ADMIN_API_BASE_URL
 from api.app.services.cart_service import AppCartService
 from api.app.services.coupon_service import AppCouponService
 from api.app.services.order_service import AppOrderService
-from api.admin.services.order_service import AdminOrderService
+from api.admin.order_service import AdminOrderService
 from utils.db.db_client import DBClient
 from utils.data_loader import load_yaml
 

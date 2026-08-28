@@ -6,7 +6,7 @@ Order API 测试用例
 import pytest
 from playwright.sync_api import Playwright
 from config.settings import ADMIN_API_BASE_URL
-from api.admin.services.order_service import AdminOrderService
+from api.admin.order_service import AdminOrderService
 from utils.db.db_client import DBClient
 from utils.data_loader import load_yaml
 

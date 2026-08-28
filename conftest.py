@@ -8,7 +8,7 @@ from playwright.sync_api import Page, Browser, Playwright, expect
 from config.settings import DEFAULT_USERNAME, DEFAULT_PASSWORD, WEB_USERNAME, WEB_PASSWORD, ADMIN_API_BASE_URL, APP_API_BASE_URL
 from ui.pages.admin.admin_login_page import LoginPage
 from ui.pages.app.app_login_page import AppLoginPage
-from api.admin.services.login_service import LoginService
+from api.admin.login_service import LoginService
 from api.app.services.login import AppLoginService
 from utils.db.db_client import DBClient
 
