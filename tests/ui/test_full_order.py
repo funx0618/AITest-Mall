@@ -182,18 +182,20 @@ class TestFullOrder:
 
             # 验证活动优惠 = 原价 - 秒杀价
             original_price = int(data["original_price"])
-            expected_activity_discount = str(original_price - int(flash_price))
-            activity_discount_text = checkout.get_discount_amount("活动优惠")
-            assert expected_activity_discount in activity_discount_text
+            expected_activity_discount = f"-￥{original_price - int(flash_price)}"
+            expect(
+                checkout.get_discount_amount_locator("活动优惠")
+            ).to_have_text(expected_activity_discount, timeout=10000)
 
             # 验证优惠券面额
-            coupon_discount_text = checkout.get_discount_amount("优惠券")
-            assert data["coupon_amount"] in coupon_discount_text
+            expected_coupon_amount = f"-￥{data['coupon_amount']}"
+            expect(
+                checkout.get_discount_amount_locator("优惠券")
+            ).to_have_text(expected_coupon_amount, timeout=10000)
 
             # 验证实付款 = 秒杀价 - 优惠券面额
-            expected_pay = str(int(flash_price) - int(data["coupon_amount"]))
-            actual_pay_text = checkout.get_actual_pay_amount()
-            assert expected_pay in actual_pay_text
+            expected_pay = str(int(flash_price) - int(data['coupon_amount']))
+            expect(checkout.actual_pay_locator).to_have_text(expected_pay, timeout=10000)
 
             # Step 7: 提交订单并支付
             checkout.submit_order()
@@ -211,6 +213,91 @@ class TestFullOrder:
             admin_logged_in_page.reload()
             flash_flow.delete_flash_sale(activity_title)
             coupon_flow.delete_coupon(coupon_name)
+
+    def test_flash_order(self, app_logged_in: Page, admin_logged_in_page: Page):
+        """仅使用秒杀活动下单（无优惠券）：新增秒杀活动 → 设置商品 → 编辑秒杀价格 → App秒杀专区下单 → 验证实付款
+
+        实付款 = 秒杀价
+        """
+        data = test_data["test_flash_order"]
+        activity_title = data["activity_title"]
+        product_name = data["product_name"]
+        flash_price = data["flash_price"]
+
+        # ========== Admin 端：新增秒杀活动 ==========
+        flash_flow = FlashFlow(admin_logged_in_page)
+        flash_flow.add_flash_sale(title=activity_title)
+        # 搜索验证新增秒杀活动已创建
+        flash_flow.flash_page.goto_list()
+        flash_flow.flash_page.search(activity_title)
+        expect(flash_flow.flash_page.cell_contain_text(activity_title)).to_be_visible()
+
+        # ========== Admin 端：设置秒杀商品 ==========
+        flash_flow.set_flash_product(
+            activity_name=activity_title,
+            product_name=product_name,
+        )
+
+        # ========== Admin 端：编辑秒杀价格 ==========
+        flash_flow.edit_flash_product_price(
+            activity_name=activity_title,
+            product_name=product_name,
+            flash_price=flash_price,
+        )
+
+        # ========== App 端 + 清理（try/finally 确保清理一定执行） ==========
+        try:
+            home = AppHomePage(app_logged_in)
+            product = AppProductPage(app_logged_in)
+            cart = AppCartPage(app_logged_in)
+            checkout = AppCheckoutPage(app_logged_in)
+            order_page = AppMyOrderPage(app_logged_in)
+
+            # Step 1: 清空购物车，避免历史数据影响
+            cart.goto()
+            cart.clear_cart()
+
+            # Step 2: 在秒杀专区点击商品，进入商品详情
+            home.goto()
+            home.click_flash_sale_product(product_name)
+            expect(product.product_title).to_be_visible(timeout=10000)
+
+            # Step 3: 加入购物车
+            product.add_to_cart()
+
+            # Step 4: 进入购物车，去结算
+            cart.goto()
+            cart.go_checkout()
+
+            # Step 5: 结算页验证活动优惠和实付款
+            expect(checkout.submit_order_btn).to_be_visible(timeout=10000)
+
+            # 验证活动优惠 = 原价 - 秒杀价
+            original_price = int(data["original_price"])
+            expected_activity_discount = f"-￥{original_price - int(flash_price)}"
+            expect(
+                checkout.get_discount_amount_locator("活动优惠")
+            ).to_have_text(expected_activity_discount, timeout=10000)
+
+            # 验证实付款 = 秒杀价
+            expected_pay = flash_price
+            expect(checkout.actual_pay_locator).to_have_text(expected_pay, timeout=10000)
+
+            # Step 6: 提交订单并支付
+            checkout.submit_order()
+            checkout.select_wechat_pay()
+            checkout.go_pay()
+
+            # Step 7: 支付成功后，点击"查看订单"，验证订单状态为"待发货"
+            app_logged_in.get_by_text("查看订单").click()
+            expect(order_page.tab_all).to_be_visible(timeout=10000)
+            latest_order = order_page.find_latest_order_by_product(product_name)
+            order_page.verify_order_status(latest_order, "等待发货")
+
+        finally:
+            # ========== 清理数据：删除秒杀活动 ==========
+            admin_logged_in_page.reload()
+            flash_flow.delete_flash_sale(activity_title)
 
     def test_coupon_order(self, app_logged_in: Page, admin_logged_in_page: Page):
         """使用优惠券下单流程（无秒杀）：新增优惠券 → App搜索商品领取优惠券 → 加购 → 结算选择优惠券 → 验证实付款
@@ -272,13 +359,14 @@ class TestFullOrder:
             checkout.select_coupon(coupon_name)
 
             # 验证优惠券面额
-            coupon_discount_text = checkout.get_discount_amount("优惠券")
-            assert data["coupon_amount"] in coupon_discount_text
+            expected_coupon_amount = f"-￥{data['coupon_amount']}"
+            expect(
+                checkout.get_discount_amount_locator("优惠券")
+            ).to_have_text(expected_coupon_amount, timeout=10000)
 
             # 验证实付款 = 商品原价 - 优惠券面额
-            expected_pay = str(int(data["original_price"]) - int(data["coupon_amount"]))
-            actual_pay_text = checkout.get_actual_pay_amount()
-            assert expected_pay in actual_pay_text
+            expected_pay = str(int(data['original_price']) - int(data['coupon_amount']))
+            expect(checkout.actual_pay_locator).to_have_text(expected_pay, timeout=10000)
 
             # Step 7: 提交订单并支付
             checkout.submit_order()

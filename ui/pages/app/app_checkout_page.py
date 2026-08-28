@@ -37,18 +37,33 @@ class AppCheckoutPage:
 
     # ========== 结算操作 ==========
     def get_discount_amount(self, discount_name: str) -> str:
-        """获取指定优惠类型的优惠金额（如 活动优惠、优惠券）"""
+        """获取指定优惠类型的优惠金额（如 活动优惠、优惠券），去掉 ¥￥- 符号"""
         row = self.page.locator(".yt-list-cell").filter(
             has=self.page.locator(".cell-tit", has_text=discount_name)
         ).filter(
             has_not=self.page.locator(".cell-tip", has_text="选择")
         )
         expect(row).to_be_visible(timeout=10000)
-        return row.locator(".cell-tip").inner_text()
+        return row.locator(".cell-tip").inner_text().replace("¥", "").replace("￥", "").replace("-", "").strip()
+
+    def get_discount_amount_locator(self, discount_name: str):
+        """获取指定优惠类型的优惠金额 Locator，供 expect 断言使用"""
+        row = self.page.locator(".yt-list-cell").filter(
+            has=self.page.locator(".cell-tit", has_text=discount_name)
+        ).filter(
+            has_not=self.page.locator(".cell-tip", has_text="选择")
+        )
+        expect(row).to_be_visible(timeout=10000)
+        return row.locator(".cell-tip")
 
     def get_actual_pay_amount(self) -> str:
-        """获取订单实付款金额"""
-        return self.page.locator(".footer .price-content .price").inner_text().strip()
+        """获取订单实付款金额，去掉 ¥￥ 符号"""
+        return self.page.locator(".footer .price-content .price").inner_text().replace("¥", "").replace("￥", "").strip()
+
+    @property
+    def actual_pay_locator(self):
+        """获取订单实付款金额 Locator，供 expect 断言使用"""
+        return self.page.locator(".footer .price-content .price")
 
     def select_coupon(self, coupon_name: str):
         """在结算页选择指定优惠券：点击优惠券行 → 展开列表中选择目标券"""
