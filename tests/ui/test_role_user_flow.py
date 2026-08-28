@@ -14,7 +14,7 @@ from ui.flows.admin.admin_user_flow import AdminUserFlow
 from utils.data_loader import load_yaml
 
 # 加载测试数据
-test_data = load_yaml("e2e/test_role_user_flow.yaml")
+test_data = load_yaml("ui/test_role_user_flow.yaml")
 
 
 def expand_sidebar(page):
