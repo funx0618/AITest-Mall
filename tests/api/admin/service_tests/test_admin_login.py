@@ -17,7 +17,7 @@ def api_context(playwright: Playwright):
     ctx.dispose()
 
 
-class TestLogin:
+class TestAdminLogin:
     """SSO 登录接口测试"""
 
     def test_login_with_wrong_password(self, api_context):
