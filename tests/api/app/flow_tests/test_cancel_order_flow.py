@@ -42,11 +42,11 @@ def order_service(playwright: Playwright, app_token: str):
 @pytest.fixture
 def test_data(request):
     """根据测试方法名自动加载对应测试数据"""
-    data = load_yaml("api/test_order_flow.yaml")
+    data = load_yaml("api/test_cancel_order_flow.yaml")
     return data[request.function.__name__]
 
 
-class TestAppOrderFlow:
+class TestAppCancelOrderFlow:
     """订单流程测试"""
 
     def test_add_cart_and_cancel_order(
