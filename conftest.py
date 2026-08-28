@@ -9,7 +9,7 @@ from config.settings import DEFAULT_USERNAME, DEFAULT_PASSWORD, WEB_USERNAME, WE
 from ui.pages.admin.admin_login_page import LoginPage
 from ui.pages.app.app_login_page import AppLoginPage
 from api.admin.login_service import LoginService
-from api.app.services.login import AppLoginService
+from api.app.login import AppLoginService
 from utils.db.db_client import DBClient
 
 # Web App 手机端视窗配置 (iPhone 12)

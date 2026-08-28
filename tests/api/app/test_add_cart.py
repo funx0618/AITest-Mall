@@ -8,7 +8,7 @@
 import pytest
 from playwright.sync_api import Playwright
 from config.settings import APP_API_BASE_URL
-from api.app.services.cart_service import AppCartService
+from api.app.cart_service import AppCartService
 from utils.db.db_client import DBClient
 from utils.data_loader import load_yaml
 

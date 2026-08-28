@@ -6,7 +6,7 @@ App Login API 测试用例
 import pytest
 from playwright.sync_api import Playwright
 from config.settings import APP_API_BASE_URL, WEB_USERNAME, WEB_PASSWORD
-from api.app.services.login import AppLoginService
+from api.app.login import AppLoginService
 
 
 @pytest.fixture
