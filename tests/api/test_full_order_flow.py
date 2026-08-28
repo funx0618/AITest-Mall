@@ -58,7 +58,7 @@ def admin_order_service(playwright: Playwright, admin_token: str):
 @pytest.fixture
 def test_data(request):
     """根据测试方法名自动加载对应测试数据"""
-    data = load_yaml("e2e/test_full_order_flow.yaml")
+    data = load_yaml("api/test_full_order_flow.yaml")
     return data[request.function.__name__]
 
 
