@@ -10,13 +10,13 @@ test_add_cart_and_cancel_order:
   coupon_id: 0         # 不使用优惠券
 
 test_add_cart_with_coupon_and_cancel_order:
-  product_id: 26       # 华为 HUAWEI P20
-  sku_id: 110          # 金色 16G
-  product_name: "华为 HUAWEI P20"
+  product_id: 33       # 小米（MI）小米电视4A
+  sku_id: 193          # 43英寸 金属款
+  product_name: "小米（MI）小米电视4A"
   quantity: 1
   pay_type: 1          # 支付方式：1=支付宝
   use_integration: 0   # 不使用积分
-  coupon_name: "手机国家补贴卷"
+  coupon_name: "API测试优惠卷下单"
 
 test_add_cart_with_flash_coupon_and_cancel_order:
   product_id: 26       # 华为 HUAWEI P20（秒杀商品，单品折扣商品，秒杀优先级大于单品优惠）

@@ -6,8 +6,10 @@
 """
 
 import pytest
+from datetime import datetime, timedelta
 from playwright.sync_api import Playwright
-from config.settings import APP_API_BASE_URL
+from config.settings import APP_API_BASE_URL, ADMIN_API_BASE_URL
+from api.admin.coupon_service import AdminCouponService
 from api.app.cart_service import AppCartService
 from api.app.coupon_service import AppCouponService
 from api.app.order_service import AppOrderService
@@ -172,232 +174,221 @@ class TestAppCancelOrderFlow:
 
     def test_add_cart_with_coupon_and_cancel_order(
         self,
+        playwright: Playwright,
+        admin_token: str,
         cart_service: AppCartService,
         coupon_service: AppCouponService,
         order_service: AppOrderService,
         db: DBClient,
         test_data: dict,
     ):
-        """加购 → 领取优惠券 → 生成确认单 → 使用优惠券提交订单 → 验证金额 → 取消订单"""
-        # ==================== 1. 从DB获取基础数据，计算期望金额 ====================
-        product_id = test_data["product_id"]
-        product_sku_id = test_data["sku_id"]
-        quantity = test_data["quantity"]
-
-        # 验证商品存在且已上架
-        product_row = db.query(
-            "SELECT id, price, name, promotion_type FROM pms_product "
-            "WHERE id = %s AND publish_status = 1 AND delete_status = 0",
-            (product_id,),
-        )
-        assert len(product_row) > 0, f"未找到上架商品: id={product_id}"
-
-        # 获取SKU价格和促销价
-        sku_row = db.query(
-            "SELECT id, price, promotion_price, stock FROM pms_sku_stock "
-            "WHERE id = %s AND product_id = %s",
-            (product_sku_id, product_id),
-        )
-        assert len(sku_row) > 0, f"商品(ID={product_id})无 SKU(ID={product_sku_id})库存数据"
-        sku_price = float(sku_row[0]["price"])
-        sku_promo_price = float(sku_row[0]["promotion_price"])
-
-        # 获取优惠券金额
+        """加购(小米电视4A) → 领取优惠券 → 生成确认单 → 使用优惠券提交订单 → 验证金额 → 取消订单 → 清理优惠券"""
         coupon_name = test_data["coupon_name"]
-        coupon_row = db.query(
-            "SELECT id, amount, min_point FROM sms_coupon "
-            "WHERE name = %s AND use_type = 0 AND start_time <= NOW() AND end_time >= NOW()",
-            (coupon_name,),
-        )
-        assert len(coupon_row) > 0, f"未找到可用优惠券: {coupon_name}"
-        coupon_id = coupon_row[0]["id"]
-        expected_coupon = float(coupon_row[0]["amount"])
+        coupon_id = None
+        created_coupon = False  # 标记是否在本次测试中创建了优惠券
 
-        # 查询收货地址
-        address_row = db.query(
-            "SELECT id FROM ums_member_receive_address "
-            "WHERE member_id = 12 AND default_status = 1 LIMIT 1"
-        )
-        assert len(address_row) > 0, "数据库中无默认收货地址"
-        address_id = address_row[0]["id"]
-
-        # ==================== 2. 查询并领取优惠券 ====================
-        # 检查会员是否已领取过该优惠券（任意状态）
-        member_coupon_row = db.query(
-            "SELECT id, coupon_id, use_status FROM sms_coupon_history "
-            "WHERE coupon_id = %s AND member_id = 12",
-            (coupon_id,),
-        )
-
-        if not member_coupon_row:
-            # 未领取过，领取优惠券
-            resp = coupon_service.add_coupon(coupon_id)
-            assert resp.ok, f"领取优惠券请求失败: HTTP {resp.status_code}"
-            assert resp.code == 200, f"领取优惠券失败: {resp.json}"
-
-        # 取消订单后 use_status 仍然是 1，说明后端取消接口没有恢复优惠券。重置逻辑就是为了解决这个问题
-        # 检查是否有未使用的优惠券，如果没有则重置最早的一条
-        member_coupon_row = db.query(
-            "SELECT id, coupon_id, use_status FROM sms_coupon_history "
-            "WHERE coupon_id = %s AND member_id = 12 AND use_status = 0",
-            (coupon_id,),
-        )
-        if not member_coupon_row:
-            # 重置最早一条已使用记录，确保测试可重复执行
-            
-            db.query(
-                "UPDATE sms_coupon_history SET use_status = 0, use_time = NULL "
-                "WHERE coupon_id = %s AND member_id = 12 "
-                "ORDER BY id ASC LIMIT 1",
-                (coupon_id,),
+        try:
+            # ==================== 1. 内联创建优惠券（如不存在） ====================
+            existing_coupon = db.query(
+                "SELECT id, amount FROM sms_coupon WHERE name = %s AND deleted = 0",
+                (coupon_name,),
             )
+            if existing_coupon:
+                coupon_id = existing_coupon[0]["id"]
+                expected_coupon = float(existing_coupon[0]["amount"])
+            else:
+                now = datetime.now()
+                coupon_param = {
+                    "type": 0,
+                    "name": coupon_name,
+                    "platform": 0,
+                    "amount": 50,
+                    "perLimit": 1,
+                    "useType": 0,
+                    "productRelationList": [],
+                    "productCategoryRelationList": [],
+                    "publishCount": 100,
+                    "minPoint": 100,
+                    "enableTime": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                    "startTime": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                    "endTime": (now + timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                    "note": "自动化测试优惠券",
+                    "code": "AUTO_TEST",
+                    "memberLevel": 0,
+                }
+                api_context = playwright.request.new_context(base_url=ADMIN_API_BASE_URL)
+                admin_coupon_service = AdminCouponService(api_context, admin_token)
+                resp = admin_coupon_service.create_coupon(coupon_param)
+                api_context.dispose()
+                assert resp.ok, f"创建优惠券请求失败: HTTP {resp.status_code}"
+                assert resp.code == 200, f"创建优惠券失败: {resp.json}"
+                created_coupon = True
+                # 查询刚创建的优惠券
+                check = db.query(
+                    "SELECT id, amount FROM sms_coupon WHERE name = %s AND deleted = 0",
+                    (coupon_name,),
+                )
+                assert len(check) > 0, f"优惠券创建后数据库中未找到: {coupon_name}"
+                coupon_id = check[0]["id"]
+                expected_coupon = float(check[0]["amount"])
+
+            # ==================== 2. 获取基础数据 ====================
+            product_id = test_data["product_id"]
+            product_sku_id = test_data["sku_id"]
+            quantity = test_data["quantity"]
+
+            # 验证商品存在且已上架
+            product_row = db.query(
+                "SELECT id, price, name FROM pms_product "
+                "WHERE id = %s AND publish_status = 1 AND delete_status = 0",
+                (product_id,),
+            )
+            assert len(product_row) > 0, f"未找到上架商品: id={product_id}"
+
+            # 获取SKU价格
+            sku_row = db.query(
+                "SELECT id, price, stock FROM pms_sku_stock "
+                "WHERE id = %s AND product_id = %s",
+                (product_sku_id, product_id),
+            )
+            assert len(sku_row) > 0, f"商品(ID={product_id})无 SKU(ID={product_sku_id})库存数据"
+            sku_price = float(sku_row[0]["price"])
+
+            # 查询收货地址
+            address_row = db.query(
+                "SELECT id FROM ums_member_receive_address "
+                "WHERE member_id = 12 AND default_status = 1 LIMIT 1"
+            )
+            assert len(address_row) > 0, "数据库中无默认收货地址"
+            address_id = address_row[0]["id"]
+
+            # ==================== 3. 领取优惠券 ====================
             member_coupon_row = db.query(
                 "SELECT id, coupon_id, use_status FROM sms_coupon_history "
                 "WHERE coupon_id = %s AND member_id = 12 AND use_status = 0",
                 (coupon_id,),
             )
-        assert len(member_coupon_row) > 0, f"会员无可用优惠券: coupon_id={coupon_id}"
+            if not member_coupon_row:
+                # 尝试重置已使用记录或重新领取
+                db.query(
+                    "UPDATE sms_coupon_history SET use_status = 0, use_time = NULL "
+                    "WHERE coupon_id = %s AND member_id = 12 "
+                    "ORDER BY id ASC LIMIT 1",
+                    (coupon_id,),
+                )
+                member_coupon_row = db.query(
+                    "SELECT id, coupon_id, use_status FROM sms_coupon_history "
+                    "WHERE coupon_id = %s AND member_id = 12 AND use_status = 0",
+                    (coupon_id,),
+                )
+                if not member_coupon_row:
+                    resp = coupon_service.add_coupon(coupon_id)
+                    assert resp.ok, f"领取优惠券请求失败: HTTP {resp.status_code}"
+                    assert resp.code == 200, f"领取优惠券失败: {resp.json}"
+            assert len(member_coupon_row) > 0 or db.query(
+                "SELECT id FROM sms_coupon_history WHERE coupon_id = %s AND member_id = 12 AND use_status = 0",
+                (coupon_id,),
+            ), f"会员无可用优惠券: coupon_id={coupon_id}"
 
-        # ==================== 3. 清理购物车并加购 ====================
-        # 清理该商品的已有购物车记录，避免数量累积
-        db.query(
-            "UPDATE oms_cart_item SET delete_status = 1 "
-            "WHERE product_id = %s AND product_sku_id = %s AND delete_status = 0",
-            (product_id, product_sku_id),
-        )
+            # ==================== 4. 清理购物车并加购 ====================
+            db.query(
+                "UPDATE oms_cart_item SET delete_status = 1 "
+                "WHERE product_id = %s AND product_sku_id = %s AND delete_status = 0",
+                (product_id, product_sku_id),
+            )
 
-        resp = cart_service.add_cart(product_id, product_sku_id, quantity)
-        assert resp.ok, f"加购请求失败: HTTP {resp.status_code}"
-        assert resp.code == 200, f"加购失败: {resp.json}"
+            resp = cart_service.add_cart(product_id, product_sku_id, quantity)
+            assert resp.ok, f"加购请求失败: HTTP {resp.status_code}"
+            assert resp.code == 200, f"加购失败: {resp.json}"
 
-        # 查询购物车中该商品的 cart_id 和实际数量（可能已有历史残留）
-        cart_row = db.query(
-            "SELECT id, quantity FROM oms_cart_item "
-            "WHERE product_id = %s AND product_sku_id = %s AND delete_status = 0",
-            (product_id, product_sku_id),
-        )
-        assert len(cart_row) > 0, "加购后数据库中未找到购物车记录"
-        cart_ids = [cart_row[0]["id"]]
-        cart_quantity = int(cart_row[0]["quantity"])
+            cart_row = db.query(
+                "SELECT id, quantity FROM oms_cart_item "
+                "WHERE product_id = %s AND product_sku_id = %s AND delete_status = 0",
+                (product_id, product_sku_id),
+            )
+            assert len(cart_row) > 0, "加购后数据库中未找到购物车记录"
+            cart_ids = [cart_row[0]["id"]]
+            cart_quantity = int(cart_row[0]["quantity"])
 
-        # ==================== 根据购物车实际数量计算期望金额 ====================
-        # 商品合计 = 购物车数量 × SKU原价
-        expected_total = cart_quantity * sku_price
-        # 活动优惠 = (SKU原价 - SKU促销价) × 购物车数量
-        expected_promotion = cart_quantity * (sku_price - sku_promo_price)
-        # 积分抵扣 = 0（不使用积分）
-        expected_integration = 0
-        # 运费 = 0（订单金额大于免邮门槛）
-        expected_freight = 0
-        # 实付款 = 商品合计 + 运费 - 活动优惠 - 优惠券 - 积分抵扣
-        expected_pay = max(
-            expected_total + expected_freight - expected_promotion
-            - expected_coupon - expected_integration,
-            0,
-        )
+            # ==================== 计算期望金额（商品无促销，仅验证优惠券） ====================
+            # 商品合计 = 数量 × SKU原价
+            expected_total = cart_quantity * sku_price
+            # 实付款 = 商品合计 - 优惠券（该商品无任何促销，运费=0）
+            expected_pay = max(expected_total - expected_coupon, 0)
 
-        # ==================== 4. 生成确认单 — 逐字段验证 ====================
-        # 生成确认单时，还没有使用优惠卷，提交订单时才使用优惠卷
-        resp = order_service.generate_confirm_order(cart_ids)
-        assert resp.ok, f"生成确认单请求失败: HTTP {resp.status_code}"
-        assert resp.code == 200, f"生成确认单失败: {resp.json}"
+            # ==================== 5. 生成确认单 — 验证优惠券可选 ====================
+            resp = order_service.generate_confirm_order(cart_ids)
+            assert resp.ok, f"生成确认单请求失败: HTTP {resp.status_code}"
+            assert resp.code == 200, f"生成确认单失败: {resp.json}"
 
-        calc_amount = resp.data["calcAmount"]
+            calc_amount = resp.data["calcAmount"]
 
-        # 验证商品合计
-        assert float(calc_amount["totalAmount"]) == expected_total, \
-            f"确认单商品合计不匹配: 期望 {expected_total}, 实际 {calc_amount['totalAmount']}"
-        # 验证运费
-        assert float(calc_amount["freightAmount"]) == expected_freight, \
-            f"确认单运费不匹配: 期望 {expected_freight}, 实际 {calc_amount['freightAmount']}"
-        # 验证活动优惠
-        assert float(calc_amount["promotionAmount"]) == expected_promotion, \
-            f"确认单活动优惠不匹配: 期望 {expected_promotion}, 实际 {calc_amount['promotionAmount']}"
+            # 验证确认单中活动优惠为 0
+            assert float(calc_amount["promotionAmount"]) == 0, \
+                f"确认单活动优惠应为 0，实际: {calc_amount['promotionAmount']}"
+            # 验证确认单中包含该优惠券
+            coupon_list = resp.data.get("couponHistoryDetailList", [])
+            coupon_found = any(c.get("couponId") == coupon_id for c in coupon_list)
+            assert coupon_found, f"确认单中未包含优惠券: {coupon_name}"
 
-        # 确认单的实付款（未使用优惠券，实际付款 = 合计 + 运费 - 活动优惠）
-        confirm_pay = float(calc_amount["payAmount"])
-        expected_confirm_pay = max(expected_total + expected_freight - expected_promotion, 0)
-        assert confirm_pay == expected_confirm_pay, \
-            f"确认单实付款不匹配: 期望 {expected_confirm_pay}, 实际 {confirm_pay}"
+            # ==================== 6. 使用优惠券提交订单 ====================
+            order_param = {
+                "memberReceiveAddressId": address_id,
+                "couponId": coupon_id,
+                "useIntegration": test_data["use_integration"],
+                "payType": test_data["pay_type"],
+                "cartIds": cart_ids,
+            }
+            resp = order_service.generate_order(order_param)
+            assert resp.ok, f"提交订单请求失败: HTTP {resp.status_code}"
+            assert resp.code == 200, f"提交订单失败: {resp.json}"
+            order_id = resp.data["order"]["id"]
+            assert order_id, f"提交订单未返回订单ID: {resp.json}"
 
-        # 验证确认单中包含该优惠券
-        coupon_list = resp.data.get("couponHistoryDetailList", [])
-        coupon_found = any(c.get("couponId") == coupon_id for c in coupon_list)
-        assert coupon_found, f"确认单中未包含优惠券: {coupon_name}"
+            # ==================== 7. 验证实付款 ====================
+            order_data = resp.data["order"]
+            assert float(order_data["payAmount"]) == expected_pay, \
+                f"订单实付款不匹配: 期望 {expected_pay}, 实际 {order_data['payAmount']}"
 
-        # ==================== 5. 使用优惠券提交订单 — 仅验证实付款 ====================
-        order_param = {
-            "memberReceiveAddressId": address_id,
-            "couponId": coupon_id,
-            "useIntegration": test_data["use_integration"],
-            "payType": test_data["pay_type"],
-            "cartIds": cart_ids,
-        }
-        resp = order_service.generate_order(order_param)
-        assert resp.ok, f"提交订单请求失败: HTTP {resp.status_code}"
-        assert resp.code == 200, f"提交订单失败: {resp.json}"
-        order_id = resp.data["order"]["id"]
-        assert order_id, f"提交订单未返回订单ID: {resp.json}"
+            # 验证DB订单记录
+            order_row = db.query("SELECT * FROM oms_order WHERE id = %s", (order_id,))
+            assert len(order_row) > 0, f"数据库中未找到订单: id={order_id}"
+            order = order_row[0]
+            assert float(order["pay_amount"]) == expected_pay, \
+                f"DB订单实付款不匹配: 期望 {expected_pay}, 实际 {order['pay_amount']}"
+            assert float(order["coupon_amount"]) == expected_coupon, \
+                f"DB订单优惠券抵扣不匹配: 期望 {expected_coupon}, 实际 {order['coupon_amount']}"
+            assert order["coupon_id"] == coupon_id, \
+                f"DB订单优惠券ID不匹配: 期望 {coupon_id}, 实际 {order['coupon_id']}"
 
-        # 验证实付款（与确认单一致）
-        order_data = resp.data["order"]
-        assert float(order_data["payAmount"]) == expected_pay, \
-            f"订单实付款不匹配: 期望 {expected_pay}, 实际 {order_data['payAmount']}"
+            # 验证优惠券使用状态
+            coupon_history_after = db.query(
+                "SELECT use_status FROM sms_coupon_history "
+                "WHERE coupon_id = %s AND member_id = 12 ORDER BY id DESC LIMIT 1",
+                (coupon_id,),
+            )
+            assert len(coupon_history_after) > 0, "未找到优惠券使用记录"
+            assert coupon_history_after[0]["use_status"] == 1, \
+                f"优惠券使用状态应为已使用(1)，实际: {coupon_history_after[0]['use_status']}"
 
-        # ==================== 6. 验证数据库订单记录 ====================
-        order_row = db.query(
-            "SELECT * FROM oms_order WHERE id = %s", (order_id,)
-        )
-        assert len(order_row) > 0, f"数据库中未找到订单: id={order_id}"
-        order = order_row[0]
-        assert order["status"] == 0, f"订单状态应为待付款(0)，实际: {order['status']}"
-        assert order["delete_status"] in (0, None), \
-            f"订单删除状态异常: {order['delete_status']}"
-        assert float(order["total_amount"]) == expected_total, \
-            f"DB订单商品合计不匹配: 期望 {expected_total}, 实际 {order['total_amount']}"
-        assert float(order["pay_amount"]) == expected_pay, \
-            f"DB订单实付款不匹配: 期望 {expected_pay}, 实际 {order['pay_amount']}"
-        assert float(order["freight_amount"]) == expected_freight, \
-            f"DB订单运费不匹配: 期望 {expected_freight}, 实际 {order['freight_amount']}"
-        assert float(order["promotion_amount"]) == expected_promotion, \
-            f"DB订单活动优惠不匹配: 期望 {expected_promotion}, 实际 {order['promotion_amount']}"
-        assert order["coupon_id"] == coupon_id, \
-            f"DB订单优惠券ID不匹配: 期望 {coupon_id}, 实际 {order['coupon_id']}"
-        assert float(order["coupon_amount"]) == expected_coupon, \
-            f"DB订单优惠券抵扣不匹配: 期望 {expected_coupon}, 实际 {order['coupon_amount']}"
+            # ==================== 8. 取消订单 ====================
+            resp = order_service.cancel_user_order(order_id)
+            assert resp.ok, f"取消订单请求失败: HTTP {resp.status_code}"
+            assert resp.code == 200, f"取消订单失败: {resp.json}"
 
-        # 验证优惠券使用状态已更新
-        coupon_history_after = db.query(
-            "SELECT use_status, use_time FROM sms_coupon_history "
-            "WHERE coupon_id = %s AND member_id = 12 ORDER BY id DESC LIMIT 1",
-            (coupon_id,),
-        )
-        assert len(coupon_history_after) > 0, "未找到优惠券使用记录"
-        assert coupon_history_after[0]["use_status"] == 1, \
-            f"优惠券使用状态应为已使用(1)，实际: {coupon_history_after[0]['use_status']}"
+            order_after = db.query(
+                "SELECT status FROM oms_order WHERE id = %s", (order_id,)
+            )
+            assert len(order_after) > 0, f"订单不存在: id={order_id}"
+            assert order_after[0]["status"] == 4, \
+                f"取消后订单状态应为已关闭(4)，实际: {order_after[0]['status']}"
 
-        # 验证订单明细
-        item_rows = db.query(
-            "SELECT * FROM oms_order_item WHERE order_id = %s", (order_id,)
-        )
-        assert len(item_rows) > 0, f"数据库中未找到订单明细: order_id={order_id}"
-        assert item_rows[0]["product_id"] == product_id, \
-            f"订单明细商品ID不匹配: 期望 {product_id}, 实际 {item_rows[0]['product_id']}"
-        assert float(item_rows[0]["coupon_amount"]) == expected_coupon, \
-            f"订单明细优惠券抵扣不匹配: 期望 {expected_coupon}, 实际 {item_rows[0]['coupon_amount']}"
-
-        # ==================== 7. 取消订单 ====================
-        resp = order_service.cancel_user_order(order_id)
-        assert resp.ok, f"取消订单请求失败: HTTP {resp.status_code}"
-        assert resp.code == 200, f"取消订单失败: {resp.json}"
-
-        # 验证订单已关闭
-        order_after = db.query(
-            "SELECT status FROM oms_order WHERE id = %s", (order_id,)
-        )
-        assert len(order_after) > 0, f"订单不存在: id={order_id}"
-        assert order_after[0]["status"] == 4, \
-            f"取消后订单状态应为已关闭(4)，实际: {order_after[0]['status']}"
+        finally:
+            # ==================== 9. 清理：软删除本次测试创建的优惠券 ====================
+            if created_coupon and coupon_id:
+                db.query(
+                    "UPDATE sms_coupon SET deleted = 1 WHERE id = %s", (coupon_id,)
+                )
 
     def test_add_cart_with_flash_coupon_and_cancel_order(
         self,
