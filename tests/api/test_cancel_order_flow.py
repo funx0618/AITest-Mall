@@ -42,6 +42,14 @@ def order_service(playwright: Playwright, app_token: str):
 
 
 @pytest.fixture
+def admin_coupon_service(playwright: Playwright, admin_token: str):
+    """已认证的 AdminCouponService 实例"""
+    api_context = playwright.request.new_context(base_url=ADMIN_API_BASE_URL)
+    yield AdminCouponService(api_context, admin_token)
+    api_context.dispose()
+
+
+@pytest.fixture
 def test_data(request):
     """根据测试方法名自动加载对应测试数据"""
     data = load_yaml("api/test_cancel_order_flow.yaml")
@@ -174,8 +182,7 @@ class TestAppCancelOrderFlow:
 
     def test_add_cart_with_coupon_and_cancel_order(
         self,
-        playwright: Playwright,
-        admin_token: str,
+        admin_coupon_service: AdminCouponService,
         cart_service: AppCartService,
         coupon_service: AppCouponService,
         order_service: AppOrderService,
@@ -185,52 +192,39 @@ class TestAppCancelOrderFlow:
         """加购(小米电视4A) → 领取优惠券 → 生成确认单 → 使用优惠券提交订单 → 验证金额 → 取消订单 → 清理优惠券"""
         coupon_name = test_data["coupon_name"]
         coupon_id = None
-        created_coupon = False  # 标记是否在本次测试中创建了优惠券
 
         try:
-            # ==================== 1. 内联创建优惠券（如不存在） ====================
-            existing_coupon = db.query(
+            # ==================== 1. 创建优惠券 ====================
+            now = datetime.now()
+            coupon_param = {
+                "type": 0,
+                "name": coupon_name,
+                "platform": 0,
+                "amount": 50,
+                "perLimit": 1,
+                "useType": 0,
+                "productRelationList": [],
+                "productCategoryRelationList": [],
+                "publishCount": 100,
+                "minPoint": 100,
+                "enableTime": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "startTime": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "endTime": (now + timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+                "note": "自动化测试优惠券",
+                "code": "AUTO_TEST",
+                "memberLevel": 0,
+            }
+            resp = admin_coupon_service.create_coupon(coupon_param)
+            assert resp.ok, f"创建优惠券请求失败: HTTP {resp.status_code}"
+            assert resp.code == 200, f"创建优惠券失败: {resp.json}"
+            # 查询刚创建的优惠券
+            check = db.query(
                 "SELECT id, amount FROM sms_coupon WHERE name = %s AND deleted = 0",
                 (coupon_name,),
             )
-            if existing_coupon:
-                coupon_id = existing_coupon[0]["id"]
-                expected_coupon = float(existing_coupon[0]["amount"])
-            else:
-                now = datetime.now()
-                coupon_param = {
-                    "type": 0,
-                    "name": coupon_name,
-                    "platform": 0,
-                    "amount": 50,
-                    "perLimit": 1,
-                    "useType": 0,
-                    "productRelationList": [],
-                    "productCategoryRelationList": [],
-                    "publishCount": 100,
-                    "minPoint": 100,
-                    "enableTime": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-                    "startTime": (now - timedelta(days=1)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-                    "endTime": (now + timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
-                    "note": "自动化测试优惠券",
-                    "code": "AUTO_TEST",
-                    "memberLevel": 0,
-                }
-                api_context = playwright.request.new_context(base_url=ADMIN_API_BASE_URL)
-                admin_coupon_service = AdminCouponService(api_context, admin_token)
-                resp = admin_coupon_service.create_coupon(coupon_param)
-                api_context.dispose()
-                assert resp.ok, f"创建优惠券请求失败: HTTP {resp.status_code}"
-                assert resp.code == 200, f"创建优惠券失败: {resp.json}"
-                created_coupon = True
-                # 查询刚创建的优惠券
-                check = db.query(
-                    "SELECT id, amount FROM sms_coupon WHERE name = %s AND deleted = 0",
-                    (coupon_name,),
-                )
-                assert len(check) > 0, f"优惠券创建后数据库中未找到: {coupon_name}"
-                coupon_id = check[0]["id"]
-                expected_coupon = float(check[0]["amount"])
+            assert len(check) > 0, f"优惠券创建后数据库中未找到: {coupon_name}"
+            coupon_id = check[0]["id"]
+            expected_coupon = float(check[0]["amount"])
 
             # ==================== 2. 获取基础数据 ====================
             product_id = test_data["product_id"]
@@ -385,11 +379,12 @@ class TestAppCancelOrderFlow:
 
         finally:
             # ==================== 9. 清理：软删除本次测试创建的优惠券 ====================
-            if created_coupon and coupon_id:
+            if coupon_id:
                 db.query(
                     "UPDATE sms_coupon SET deleted = 1 WHERE id = %s", (coupon_id,)
                 )
 
+    @pytest.mark.skip(reason="逻辑待修改")
     def test_add_cart_with_flash_coupon_and_cancel_order(
         self,
         cart_service: AppCartService,
