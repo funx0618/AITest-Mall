@@ -96,6 +96,7 @@ class TestCreateCoupon:
         assert resp.ok, f"删除优惠券请求失败: HTTP {resp.status_code}"
         assert resp.code == 200, f"删除优惠券失败: {resp.json}"
 
-        # 验证已删除
-        db_after = db.query("SELECT * FROM sms_coupon WHERE id = %s", (coupon_id,))
-        assert len(db_after) == 0, f"优惠券未被删除: id={coupon_id}"
+        # 验证已删除（软删除：deleted=1）
+        db_after = db.query("SELECT deleted FROM sms_coupon WHERE id = %s", (coupon_id,))
+        assert len(db_after) > 0, f"优惠券记录不存在: id={coupon_id}"
+        assert db_after[0]["deleted"] == 1, f"优惠券未被软删除: id={coupon_id}, deleted={db_after[0]['deleted']}"

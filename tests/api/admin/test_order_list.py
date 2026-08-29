@@ -35,10 +35,10 @@ class TestOrderList:
         receiver_keyword = test_data["receiver_keyword"]
         status = test_data["status"]
 
-        # 1. API 查询
+        # 1. API 查询（page_size 足够大以获取全量数据用于对比）
         resp = order_service.get_order_list(
             page_num=1,
-            page_size=10,
+            page_size=100,
             status=status,
             receiverKeyword=receiver_keyword,
         )
@@ -50,17 +50,16 @@ class TestOrderList:
         api_total = data.get("total", 0)
         assert api_total > 0, f"未查询到 {receiver_keyword} 的已发货订单"
 
-        # 2. 数据库查询
+        # 2. 数据库查询（不限 LIMIT，确保全量匹配）
         sql = """
             SELECT * FROM oms_order
             WHERE delete_status = 0
               AND status = %s
               AND (receiver_name LIKE %s OR receiver_phone LIKE %s)
             ORDER BY create_time DESC
-            LIMIT %s
         """
         keyword_pattern = f"%{receiver_keyword}%"
-        db_orders = db.query(sql, (status, keyword_pattern, keyword_pattern, 10))
+        db_orders = db.query(sql, (status, keyword_pattern, keyword_pattern))
 
         # 3. 数量对比
         db_total_sql = """
