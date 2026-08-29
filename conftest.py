@@ -127,3 +127,32 @@ def db():
     client = DBClient()
     yield client
     client.close()
+
+
+# ========== 测试数据初始化 ==========
+PRODUCT_IDS = (26, 30, 33)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_test_products(db):
+    """确保测试商品数据存在：逐个检查 id=26,30,33，仅对缺失的商品执行 SQL 插入"""
+    import os
+
+    existing = db.query(
+        "SELECT id FROM pms_product WHERE id IN %s", (PRODUCT_IDS,)
+    )
+    existing_ids = {row["id"] for row in existing}
+    missing = set(PRODUCT_IDS) - existing_ids
+
+    if not missing:
+        print(f"[ensure_test_products] 商品 {PRODUCT_IDS} 均已存在，跳过插入")
+        return
+
+    sql_dir = os.path.join(os.path.dirname(__file__), "data", "sql")
+    for pid in sorted(missing):
+        sql_file = os.path.join(sql_dir, f"product_insert_{pid}.sql")
+        print(f"[ensure_test_products] 缺失商品 id={pid}，执行 {os.path.basename(sql_file)} ...")
+        with open(sql_file, "r", encoding="utf-8") as f:
+            db.execute_script(f.read())
+
+    print(f"[ensure_test_products] 完成，共插入 {len(missing)} 个商品")

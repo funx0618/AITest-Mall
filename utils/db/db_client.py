@@ -25,6 +25,20 @@ class DBClient:
             cursor.execute(sql, params)
             return cursor.fetchall()
 
+    def execute(self, sql: str, params: tuple | list | None = None) -> int:
+        """执行写入 SQL（INSERT/UPDATE/DELETE），返回影响行数"""
+        with self._conn.cursor() as cursor:
+            affected = cursor.execute(sql, params)
+            return affected
+
+    def execute_script(self, sql_script: str) -> None:
+        """执行多条 SQL 语句（以分号分隔），逐条执行"""
+        with self._conn.cursor() as cursor:
+            for statement in sql_script.split(";"):
+                stmt = statement.strip()
+                if stmt:
+                    cursor.execute(stmt)
+
     def close(self):
         """关闭连接"""
         self._conn.close()
