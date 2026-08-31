@@ -1,0 +1,10 @@
+# 商品分类测试数据 (对应 test_product_category.py)
+
+test_add_root_and_child_category_verify_in_app:
+  parent_name: "测试父分类"
+  child_name: "测试子分类"
+  show: true
+
+test_add_hidden_root_category_not_shown_in_app:
+  parent_name: "测试隐藏分类"
+  show: false
